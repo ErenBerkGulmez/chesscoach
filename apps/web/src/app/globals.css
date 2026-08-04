@@ -1,0 +1,294 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens ──────────────────────────────────────────── */
+:root {
+  /* Base colors */
+  --background: #0f1419;
+  --foreground: #e8eaed;
+  --surface: #1a1f27;
+  --surface-hover: #242a33;
+  --surface-active: #2d343e;
+  --border: #2d343e;
+  --border-subtle: #1e252d;
+
+  /* Accent */
+  --accent: #81b64c;
+  --accent-hover: #96ca5c;
+  --accent-muted: rgba(129, 182, 76, 0.15);
+
+  /* Semantic */
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-muted: #5f6368;
+
+  /* Chess board */
+  --board-light: #ebecd0;
+  --board-dark: #739552;
+  --board-highlight: rgba(255, 255, 0, 0.3);
+  --board-best: rgba(150, 188, 75, 0.4);
+
+  /* Move classifications */
+  --brilliant: #1bada6;
+  --great: #5c8bb0;
+  --best: #96bc4b;
+  --excellent: #96bc4b;
+  --good: #a3b86c;
+  --inaccuracy: #f7c631;
+  --mistake: #e58f2a;
+  --blunder: #ca3431;
+
+  /* Eval bar */
+  --eval-white: #ffffff;
+  --eval-black: #1a1a1a;
+
+  /* Misc */
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+/* Light mode */
+[data-theme="light"] {
+  --background: #f0f2f5;
+  --foreground: #1a1a1a;
+  --surface: #ffffff;
+  --surface-hover: #f5f5f5;
+  --surface-active: #eeeeee;
+  --border: #e0e0e0;
+  --border-subtle: #f0f0f0;
+  --text-primary: #1a1a1a;
+  --text-secondary: #5f6368;
+  --text-muted: #9aa0a6;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-brilliant: var(--brilliant);
+  --color-great: var(--great);
+  --color-best: var(--best);
+  --color-inaccuracy: var(--inaccuracy);
+  --color-mistake: var(--mistake);
+  --color-blunder: var(--blunder);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ─── Base Styles ────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Eval Bar ───────────────────────────────────────────────── */
+
+.eval-bar {
+  width: 28px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  background: var(--eval-black);
+}
+
+.eval-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--eval-white);
+  transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.eval-bar-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  z-index: 1;
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.eval-bar-label-top {
+  top: 4px;
+  color: var(--eval-white);
+}
+
+.eval-bar-label-bottom {
+  bottom: 4px;
+  color: var(--eval-black);
+}
+
+/* ─── Move List ──────────────────────────────────────────────── */
+
+.move-list {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.85rem;
+}
+
+.move-item {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-primary);
+}
+
+.move-item:hover {
+  background: var(--surface-hover);
+}
+
+.move-item.active {
+  background: var(--accent-muted);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.move-item.brilliant { color: var(--brilliant); }
+.move-item.great { color: var(--great); }
+.move-item.best { color: var(--best); }
+.move-item.inaccuracy { color: var(--inaccuracy); }
+.move-item.mistake { color: var(--mistake); }
+.move-item.blunder { color: var(--blunder); }
+
+/* ─── Classification Badge ───────────────────────────────────── */
+
+.classification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ─── Chess Board Overrides ──────────────────────────────────── */
+
+/* Override react-chessboard defaults for our theme */
+.chess-board-container {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ─── Animations ─────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(129, 182, 76, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(129, 182, 76, 0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* ─── Glassmorphism Card ─────────────────────────────────────── */
+
+.glass-card {
+  background: rgba(26, 31, 39, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+[data-theme="light"] .glass-card {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* ─── Eval Graph ─────────────────────────────────────────────── */
+
+.eval-graph {
+  height: 80px;
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.eval-graph-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  fill: none;
+}
+
+.eval-graph-area {
+  fill: var(--accent-muted);
+}
+
+.eval-graph-zero {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.eval-graph-cursor {
+  stroke: var(--text-secondary);
+  stroke-width: 1;
+}
