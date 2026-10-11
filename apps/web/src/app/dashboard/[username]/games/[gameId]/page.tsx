@@ -37,8 +37,6 @@ export default function GameReviewPage() {
   const [refining, setRefining] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Stop the engine workers when leaving the page.
-  useEffect(() => () => abortRef.current?.abort(), []);
   // Skipping is remembered per game, so opening another game shows its progress again.
   const [skippedGameId, setSkippedGameId] = useState<string | null>(null);
   const manualSkip = skippedGameId === gameId;
@@ -78,16 +76,23 @@ export default function GameReviewPage() {
     loadGameIfMissing();
   }, [username, games.length, setUsername, setProfile, setGames]);
 
-  // Set active game
+  // Set active game. The games list is refreshed in the background, so only
+  // load the game when it is not already the active one; otherwise a refresh
+  // would throw away the finished analysis and start it again.
   useEffect(() => {
     const game = games.find((g) => g.id === gameId);
-    if (game) {
+    if (game && useAnalysisStore.getState().currentGame?.id !== game.id) {
       setGame(game);
     }
+  }, [gameId, games, setGame]);
+
+  // Leaving the game stops its analysis and clears it.
+  useEffect(() => {
     return () => {
+      abortRef.current?.abort();
       clearGame();
     };
-  }, [gameId, games, setGame, clearGame]);
+  }, [gameId, clearGame]);
 
   // Full-game analysis. A cached result is used unless `fresh` is set.
   const handleStartAnalysis = useCallback(async (fresh = false) => {
@@ -121,6 +126,7 @@ export default function GameReviewPage() {
             goToMove(0);
           },
         }));
+      if (controller.signal.aborted) return;
       if (!cached) void saveCachedAnalysis(results);
 
       setAnalysis(results);
@@ -132,8 +138,11 @@ export default function GameReviewPage() {
         err instanceof Error ? err.message : "Failed to run position analysis"
       );
     } finally {
-      setIsAnalyzing(false);
-      setRefining(false);
+      // A newer run owns these flags once this one has been replaced.
+      if (abortRef.current === controller) {
+        setIsAnalyzing(false);
+        setRefining(false);
+      }
     }
   }, [currentGame, isAnalyzing, setIsAnalyzing, setAnalysisError, setAnalysisProgress, setAnalysis, setMoveAnalyses, goToMove]);
 
