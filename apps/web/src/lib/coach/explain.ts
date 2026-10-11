@@ -9,6 +9,7 @@
 import { Chess, type Color, type Square } from 'chess.js';
 import { evalToWinPercent, formatEval } from '@/lib/stockfish/engine';
 import { getGamePhase } from '@/lib/chess/pgn-parser';
+import { formatClock, isTimeTrouble, type ClockContext } from '@/lib/chess/clock';
 import type { MoveAnalysis } from '@/types/chess';
 import { MoveClassification, PlayerColor } from '@/types/chess';
 import {
@@ -53,6 +54,10 @@ export interface MoveExplanation {
   takeaway: string | null;
   /** Drop in winning chances for the mover, 0-100. */
   winDrop: number;
+  /** Time left after the move, e.g. "0:07". Null when the game has no clocks. */
+  clock: string | null;
+  /** True when the move was played with under 10% of the starting time left. */
+  timeTrouble: boolean;
 }
 
 const BAD = new Set<MoveClassification>([
@@ -153,7 +158,11 @@ function describeBest(a: MoveAnalysis, mover: Color): { san: string; line: strin
   return { san, line, why, gain, fork };
 }
 
-export function explainMove(a: MoveAnalysis): MoveExplanation {
+export function explainMove(a: MoveAnalysis, time: ClockContext = {}): MoveExplanation {
+  const clock = time.clockMs !== undefined ? formatClock(time.clockMs) : null;
+  const timeTrouble = isTimeTrouble(time.clockMs, time.baseMs);
+  // A bad move made with almost no time left is a clock problem as much as a chess one.
+  const rushed = timeTrouble && clock ? ` You played this with ${clock} left, so the clock was part of the problem.` : '';
   const mover: Color = a.color === PlayerColor.WHITE ? 'w' : 'b';
   const opp = other(mover);
   const before = moverPerspective(a, a.evalBefore, a.mateBefore);
@@ -171,7 +180,7 @@ export function explainMove(a: MoveAnalysis): MoveExplanation {
     const detail = best
       ? `A solid move. ${best} was the engine's first choice, but the difference is small.`
       : 'This is the engine\'s top move.';
-    return { motif: null, severity, headline: `${label} is fine`, detail, better: null, evalChange, takeaway: null, winDrop };
+    return { motif: null, severity, headline: `${label} is fine`, detail, better: null, evalChange, takeaway: null, winDrop, clock, timeTrouble };
   }
 
   const reply = a.replyLine ?? [];
@@ -186,11 +195,13 @@ export function explainMove(a: MoveAnalysis): MoveExplanation {
     motif,
     severity,
     headline,
-    detail,
+    detail: detail + rushed,
     better,
     evalChange,
     takeaway: TAKEAWAYS[motif],
     winDrop,
+    clock,
+    timeTrouble,
   });
 
   // 1. Allowed a forced mate.

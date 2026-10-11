@@ -3,6 +3,7 @@
  * mistakes, and a short, prioritized list of what to work on.
  */
 import { getGamePhase } from '@/lib/chess/pgn-parser';
+import { TIME_TROUBLE_SHARE, formatClock } from '@/lib/chess/clock';
 import { evalToWinPercent } from '@/lib/stockfish/engine';
 import type { MoveAnalysis } from '@/types/chess';
 import { MoveClassification, PlayerColor } from '@/types/chess';
@@ -33,8 +34,27 @@ export interface FocusItem {
   indices: number[];
 }
 
+export interface TimeTrouble {
+  /** Mistakes and blunders played with under 10% of the starting time left. */
+  rushed: number;
+  /** All mistakes and blunders by the player. */
+  total: number;
+  /** Move labels of the rushed ones. */
+  moves: string[];
+  indices: number[];
+  line: string;
+}
+
+/** Clock readings for a game: one entry per move (same order as the analyses). */
+export interface GameClocks {
+  clocks: (number | undefined)[];
+  baseMs: number | null;
+}
+
 export interface GameReport {
   verdict: string;
+  /** Null when the game has no clocks or no costly move was played in time trouble. */
+  timeTrouble: TimeTrouble | null;
   keyMoments: KeyMoment[];
   patterns: Pattern[];
   focus: FocusItem[];
@@ -115,14 +135,18 @@ function moverEval(a: MoveAnalysis, white: number | null, mate: number | null) {
   return evalToWinPercent(white === null ? 0 : w ? white : -white, mate === null ? null : w ? mate : -mate);
 }
 
-export function buildGameReport(analyses: MoveAnalysis[], playerColor: PlayerColor): GameReport {
+export function buildGameReport(analyses: MoveAnalysis[], playerColor: PlayerColor, time?: GameClocks): GameReport {
   const mine = analyses
     .map((a, index) => ({ a, index }))
     .filter(({ a }) => a.color === playerColor);
 
   const bad = mine
     .filter(({ a }) => BAD.has(a.classification))
-    .map(({ a, index }) => ({ index, a, explanation: explainMove(a) }));
+    .map(({ a, index }) => ({
+      index,
+      a,
+      explanation: explainMove(a, { clockMs: time?.clocks[index], baseMs: time?.baseMs }),
+    }));
 
   // Key moments: the costliest mistakes, in game order.
   const keyMoments: KeyMoment[] = [...bad]
@@ -188,6 +212,33 @@ export function buildGameReport(analyses: MoveAnalysis[], playerColor: PlayerCol
     });
   }
 
+  // Time trouble: how many of the costly moves were played with almost no time left.
+  let timeTrouble: TimeTrouble | null = null;
+  if (time?.baseMs) {
+    const costly = bad.filter((b) => b.explanation.severity === 'blunder' || b.explanation.severity === 'mistake');
+    const rushed = costly.filter((b) => b.explanation.timeTrouble);
+    if (rushed.length > 0) {
+      const limit = formatClock(time.baseMs * TIME_TROUBLE_SHARE);
+      const share = rushed.length === costly.length ? (costly.length === 1 ? 'Your one' : `All ${costly.length}`) : `${rushed.length} of your ${costly.length}`;
+      const noun = costly.length === 1 ? 'costly mistake' : 'costly mistakes';
+      timeTrouble = {
+        rushed: rushed.length,
+        total: costly.length,
+        moves: rushed.map((b) => label(b.a)),
+        indices: rushed.map((b) => b.index),
+        line: `${share} ${noun} came with under ${limit} on your clock (${rushed.map((b) => label(b.a)).join(', ')}).`,
+      };
+      if (rushed.length >= 2 && rushed.length * 2 >= costly.length && focus.length < 3) {
+        focus.push({
+          title: 'Manage your clock',
+          why: timeTrouble.line,
+          drill: 'Spend less time on the opening and on forced recaptures, and aim to reach move 20 with at least half your time. With little time left, play safe moves and skip long calculations.',
+          indices: timeTrouble.indices,
+        });
+      }
+    }
+  }
+
   // Phases.
   const phases = (['opening', 'middlegame', 'endgame'] as const).map((phase) => {
     const inPhase = bad.filter((b) => getGamePhase(b.a.fenBefore, b.a.moveNumber) === phase);
@@ -213,7 +264,7 @@ export function buildGameReport(analyses: MoveAnalysis[], playerColor: PlayerCol
     verdict = `${counts.join(' and ')}. The turning point was ${worst.label}, which ${worst.explanation.headline.replace(worst.label + ' ', '')}.`;
   } else verdict = `Only small inaccuracies (${bad.length}). Nothing that changed the result.`;
 
-  return { verdict, keyMoments, patterns, focus, phases, strengths };
+  return { verdict, timeTrouble, keyMoments, patterns, focus, phases, strengths };
 }
 
 
