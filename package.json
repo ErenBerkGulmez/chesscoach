@@ -4,25 +4,10 @@
   "private": true,
   "description": "Chess coaching that you can tailor for yourself",
   "scripts": {
-    "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
-    "dev:web": "cd apps/web && npm run dev",
-    "dev:api": "cd apps/api && npm run start:dev",
-    "build": "npm run build:web && npm run build:api",
-    "build:web": "cd apps/web && npm run build",
-    "build:api": "cd apps/api && npm run build",
-    "lint": "npm run lint:web && npm run lint:api",
-    "lint:web": "cd apps/web && npm run lint",
-    "lint:api": "cd apps/api && npm run lint",
-    "db:migrate": "cd apps/api && npx prisma migrate dev",
-    "db:seed": "cd apps/api && npx prisma db seed",
-    "db:studio": "cd apps/api && npx prisma studio",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "test": "npm run test:web && npm run test:api",
-    "test:web": "cd apps/web && npm run test",
-    "test:api": "cd apps/api && npm run test"
-  },
-  "devDependencies": {
-    "concurrently": "^9.0.0"
+    "dev": "npm --prefix apps/web run dev",
+    "build": "npm --prefix apps/web run build",
+    "lint": "npm --prefix apps/web run lint",
+    "typecheck": "npm --prefix apps/web run typecheck",
+    "test": "npm --prefix apps/web run test"
   }
 }

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { usePlayerStore } from "@/stores/player-store";
 import {
   fetchPlayerProfile,
-  fetchPlayerStats as fetchChessComStats,
   fetchAllGames,
 } from "@/lib/api/chess-com";
 import { parseChessComGame } from "@/lib/chess/pgn-parser";
@@ -37,7 +37,7 @@ export default function DashboardPage() {
     setSyncError,
   } = usePlayerStore();
 
-  const [activeTab, setActiveTab] = useState<"games" | "stats" | "report">(
+  const [activeTab, setActiveTab] = useState<"games" | "stats">(
     "games"
   );
 
@@ -114,12 +114,12 @@ export default function DashboardPage() {
       <header className="bg-surface border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a
+            <Link
               href="/"
               className="text-lg font-bold text-accent hover:text-accent-hover transition-colors"
             >
               ♞ Chess Coach AI
-            </a>
+            </Link>
             <span className="text-text-muted">→</span>
             <div className="flex items-center gap-2">
               {profile?.avatar && (
@@ -216,7 +216,6 @@ export default function DashboardPage() {
               [
                 { key: "games", label: "Games", icon: "♟" },
                 { key: "stats", label: "Statistics", icon: "📊" },
-                { key: "report", label: "AI Report", icon: "🤖" },
               ] as const
             ).map((tab) => (
               <button
@@ -282,23 +281,6 @@ export default function DashboardPage() {
             transition={{ duration: 0.3 }}
           >
             <StatsOverview />
-          </motion.div>
-        )}
-
-        {activeTab === "report" && (
-          <motion.div
-            key="report"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="text-center py-20"
-          >
-            <p className="text-text-muted text-lg">
-              🤖 AI Performance Report coming soon
-            </p>
-            <p className="text-text-muted text-sm mt-2">
-              Requires Ollama running locally with llama3.1:8b model.
-            </p>
           </motion.div>
         )}
       </main>

@@ -139,7 +139,7 @@ export function evaluatePieces(fen: string): PieceEvaluationDetails {
 /**
  * Check if a square is an outpost for a Knight or Bishop
  */
-function isPieceOutpost(square: Square, type: PieceSymbol, color: Color, board: any): boolean {
+function isPieceOutpost(square: Square, type: PieceSymbol, color: Color, board: ReturnType<Chess["board"]>): boolean {
   if (type !== 'n' && type !== 'b') return false;
   const col = square.charCodeAt(0) - 97;
   const rank = parseInt(square[1], 10);

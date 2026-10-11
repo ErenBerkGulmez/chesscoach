@@ -52,7 +52,7 @@ export function generateLearningReport(
   let blunders = 0;
   let mistakes = 0;
   let brilliances = 0;
-  let totalPlayerMoves = moveAnalyses.length;
+  const totalPlayerMoves = moveAnalyses.length;
 
   for (const m of moveAnalyses) {
     if (m.classification === 'BLUNDER' || m.classification === 'MISSED_MATE') blunders++;

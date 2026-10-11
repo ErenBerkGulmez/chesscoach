@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chess Coach AI — Analyze Your Chess Games with AI",
+  title: "Chess Coach — Review your Chess.com games with Stockfish",
   description:
-    "Premium chess analysis platform powered by Stockfish and AI coaching. Enter your Chess.com username to get deep analysis, move explanations, and personalized improvement plans.",
+    "Free in-browser game review powered by Stockfish. Enter your Chess.com username to get move-by-move analysis, explanations and opening statistics.",
   keywords: ["chess", "analysis", "stockfish", "AI coach", "chess.com", "game review"],
 };
 
@@ -29,8 +29,15 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       data-theme="dark"
+      suppressHydrationWarning
     >
       <head>
+        {/* Apply the saved theme before first paint to avoid a dark flash for light-mode users. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("chess-coach-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`,
+          }}
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </head>

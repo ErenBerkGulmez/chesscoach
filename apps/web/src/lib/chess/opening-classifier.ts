@@ -321,8 +321,8 @@ export function computeOpeningCategoryStats(
     let totalMoveCount = 0;
     let accuracySum = 0;
     let accuracyCount = 0;
-    let cplSum = 0;
-    let cplCount = 0;
+    const cplSum = 0;
+    const cplCount = 0;
 
     let lastPlayed = new Date(0);
 
