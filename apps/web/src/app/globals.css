@@ -192,7 +192,6 @@ body {
 
 .move-item.brilliant { color: var(--brilliant); }
 .move-item.great { color: var(--great); }
-.move-item.best { color: var(--best); }
 .move-item.inaccuracy { color: var(--inaccuracy); }
 .move-item.mistake { color: var(--mistake); }
 .move-item.blunder { color: var(--blunder); }
@@ -251,16 +250,11 @@ body {
 /* ─── Glassmorphism Card ─────────────────────────────────────── */
 
 .glass-card {
-  background: rgba(26, 31, 39, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
-[data-theme="light"] .glass-card {
-  background: rgba(255, 255, 255, 0.8);
-}
 
 /* ─── Eval Graph ─────────────────────────────────────────────── */
 

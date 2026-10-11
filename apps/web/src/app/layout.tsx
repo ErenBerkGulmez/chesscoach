@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Chess Coach — Review your Chess.com games with Stockfish",
   description:
     "Free in-browser game review powered by Stockfish. Enter your Chess.com username to get move-by-move analysis, explanations and opening statistics.",
-  keywords: ["chess", "analysis", "stockfish", "AI coach", "chess.com", "game review"],
+  keywords: ["chess", "analysis", "stockfish", "chess.com", "game review"],
 };
 
 export default function RootLayout({

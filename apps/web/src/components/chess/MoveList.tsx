@@ -96,10 +96,15 @@ function MoveCell({ san, classification, isActive, onClick }: MoveCellProps) {
 
   useEffect(() => {
     if (isActive && ref.current) {
-      ref.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
+      // Scroll only the move list itself, never the page or sidebar.
+      const el = ref.current;
+      const box = el.closest("[data-move-scroll]") as HTMLElement | null;
+      if (box) {
+        const top = el.offsetTop; // the scroll box is the offsetParent (position: relative)
+        if (top < box.scrollTop || top + el.offsetHeight > box.scrollTop + box.clientHeight) {
+          box.scrollTo({ top: top - box.clientHeight / 2, behavior: "smooth" });
+        }
+      }
     }
   }, [isActive]);
 

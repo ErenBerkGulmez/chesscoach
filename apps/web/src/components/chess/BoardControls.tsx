@@ -6,23 +6,18 @@ import { motion } from "framer-motion";
 /**
  * Board Navigation Controls
  *
- * Provides visible UI buttons for move navigation, board flip,
- * and arrow/coordinate toggles. Complements keyboard shortcuts.
+ * Move navigation and board flip. Complements keyboard shortcuts.
  */
 export default function BoardControls() {
   const {
     currentMoveIndex,
     moves,
     isFlipped,
-    showArrows,
-    showCoordinates,
     goToStart,
     goBackward,
     goForward,
     goToEnd,
     flipBoard,
-    toggleArrows,
-    toggleCoordinates,
   } = useAnalysisStore();
 
   const isAtStart = currentMoveIndex <= -1;
@@ -93,25 +88,6 @@ export default function BoardControls() {
             </svg>
           }
         />
-        <ToolButton
-          onClick={toggleArrows}
-          label="Toggle arrows"
-          active={showArrows}
-          icon={
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          }
-        />
-        <ToolButton
-          onClick={toggleCoordinates}
-          label="Toggle coordinates"
-          active={showCoordinates}
-          icon={
-            <span className="text-[10px] font-bold font-mono leading-none">a1</span>
-          }
-        />
       </div>
 
       {/* Move counter */}
@@ -146,7 +122,7 @@ function NavButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="w-9 h-9 flex items-center justify-center rounded-lg bg-surface border border-border text-text-secondary hover:bg-surface-hover hover:text-accent hover:border-accent/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-surface disabled:hover:text-text-secondary disabled:hover:border-border"
+      className="w-11 h-10 flex items-center justify-center rounded-lg bg-surface border border-border text-text-secondary hover:bg-surface-hover hover:text-accent hover:border-accent/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-surface disabled:hover:text-text-secondary disabled:hover:border-border"
     >
       {icon}
     </motion.button>
@@ -170,7 +146,7 @@ function ToolButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`w-8 h-8 flex items-center justify-center rounded-md border transition-all ${
+      className={`w-10 h-10 flex items-center justify-center rounded-md border transition-all ${
         active
           ? "bg-accent/10 border-accent/30 text-accent"
           : "bg-surface border-border text-text-muted hover:bg-surface-hover hover:text-text-secondary"
