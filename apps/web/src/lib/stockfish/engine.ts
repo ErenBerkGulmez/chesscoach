@@ -53,6 +53,7 @@ type EngineState = 'idle' | 'initializing' | 'ready' | 'evaluating' | 'destroyed
 export class StockfishEngine {
   private worker: Worker | null = null;
   private state: EngineState = 'idle';
+  private multiPv = DEFAULT_OPTIONS.multiPv;
   private messageBuffer: string[] = [];
   private resolveReady: (() => void) | null = null;
   private currentEval: {
@@ -105,6 +106,7 @@ export class StockfishEngine {
       this.sendCommand(`setoption name Threads value ${opts.threads}`);
       this.sendCommand(`setoption name Hash value ${opts.hash}`);
       this.sendCommand(`setoption name MultiPV value ${opts.multiPv}`);
+      this.multiPv = opts.multiPv;
       this.sendCommand('isready');
 
       return new Promise<void>((resolve) => {
@@ -155,9 +157,10 @@ export class StockfishEngine {
     this.state = 'evaluating';
     this.onEvalProgress = onProgress;
 
-    // Update MultiPV if different
-    if (opts.multiPv !== DEFAULT_OPTIONS.multiPv) {
+    // Update MultiPV if it differs from what the engine is set to
+    if (opts.multiPv !== this.multiPv) {
       this.sendCommand(`setoption name MultiPV value ${opts.multiPv}`);
+      this.multiPv = opts.multiPv;
     }
 
     return new Promise<EvalResult[]>((resolve, reject) => {

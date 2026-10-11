@@ -58,3 +58,44 @@ describe("analyzeGame accuracy", () => {
     expect(total(asBlack)).toBe(3);
   });
 });
+
+describe("evaluatePositions", () => {
+  it("returns results in input order when spread over several workers", async () => {
+    const { evaluatePositions } = await import("./analyzer");
+    const fens = [moves[0].fenBefore, ...moves.map((m) => m.fen)];
+    const seen: number[] = [];
+    const out = await evaluatePositions(fens, { depth: 8, multiPv: 1, workers: 3, onResult: (i) => seen.push(i) });
+    expect(out).toHaveLength(fens.length);
+    out.forEach((lines, i) => expect(lines).toEqual(fakeLines(fens[i])));
+    expect([...seen].sort((a, b) => a - b)).toEqual(fens.map((_, i) => i));
+  });
+
+  it("stops when aborted", async () => {
+    const { evaluatePositions } = await import("./analyzer");
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      evaluatePositions([moves[0].fen], { depth: 8, multiPv: 1, workers: 1, signal: controller.signal })
+    ).rejects.toThrow("aborted");
+  });
+});
+
+describe("analyzeGame refinement", () => {
+  it("reports a preliminary result before the deeper pass and keeps every move", async () => {
+    const prelim: number[] = [];
+    const result = await analyzeGame(moves, "g1", {
+      depth: 8,
+      refineDepth: 12,
+      onPreliminary: (a) => prelim.push(a.moves.length),
+    });
+    expect(prelim).toEqual([moves.length]);
+    expect(result.moves).toHaveLength(moves.length);
+    expect(result.engineDepth).toBe(12);
+  });
+
+  it("skips the preliminary callback when refinement is off", async () => {
+    const prelim: number[] = [];
+    await analyzeGame(moves, "g1", { depth: 10, refineDepth: 10, onPreliminary: () => prelim.push(1) });
+    expect(prelim).toEqual([]);
+  });
+});

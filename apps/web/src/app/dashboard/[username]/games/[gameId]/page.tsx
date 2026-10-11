@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAnalysisStore } from "@/stores/analysis-store";
-import { analyzeGame } from "@/lib/stockfish/analyzer";
+import { analyzeGame, DEFAULT_ANALYZER_OPTIONS } from "@/lib/stockfish/analyzer";
+import { loadCachedAnalysis, saveCachedAnalysis } from "@/lib/analysis/cache";
 import { summarizePlayerMoves } from "@/lib/analysis/summary";
 import {
   CLASSIFICATION_CONFIG,
@@ -49,8 +50,12 @@ export default function GameReviewPage() {
     goToMove,
   } = useAnalysisStore();
 
-  const [depth] = useState(16);
   const [isSyncingLocal, setIsSyncingLocal] = useState(false);
+  const [refining, setRefining] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Stop the engine workers when leaving the page.
+  useEffect(() => () => abortRef.current?.abort(), []);
   // Skipping is remembered per game, so opening another game shows its progress again.
   const [skippedGameId, setSkippedGameId] = useState<string | null>(null);
   const manualSkip = skippedGameId === gameId;
@@ -101,37 +106,53 @@ export default function GameReviewPage() {
     };
   }, [gameId, games, setGame, clearGame]);
 
-  // Start position analysis
-  const handleStartAnalysis = useCallback(async () => {
+  // Full-game analysis. A cached result is used unless `fresh` is set.
+  const handleStartAnalysis = useCallback(async (fresh = false) => {
     if (!currentGame || isAnalyzing) return;
 
     setIsAnalyzing(true);
     setAnalysisError(null);
     setAnalysisProgress(0);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
-      const results = await analyzeGame(currentGame.moves, currentGame.id, {
-        depth,
-        multiPv: 3,
-        threads: 2,
-        playerColor: currentGame.playerColor,
-        onProgress: (moveIndex, totalMoves) => {
-          const progress = Math.round((moveIndex / totalMoves) * 100);
-          setAnalysisProgress(progress);
-        },
-      });
+      const cached = fresh ? null : await loadCachedAnalysis(currentGame.id);
+      let shown = false;
+      const results =
+        cached ??
+        (await analyzeGame(currentGame.moves, currentGame.id, {
+          playerColor: currentGame.playerColor,
+          signal: controller.signal,
+          onProgress: (done, total) => {
+            setAnalysisProgress(Math.round((done / total) * 100));
+          },
+          // Show the review as soon as the fast pass is done; the deeper
+          // re-check of critical moves replaces it when it finishes.
+          onPreliminary: (preliminary) => {
+            shown = true;
+            setRefining(true);
+            setAnalysis(preliminary);
+            setMoveAnalyses(preliminary.moves);
+            goToMove(0);
+          },
+        }));
+      if (!cached) void saveCachedAnalysis(results);
 
       setAnalysis(results);
       setMoveAnalyses(results.moves);
-      goToMove(0);
+      if (!shown) goToMove(0);
     } catch (err) {
+      if (controller.signal.aborted) return;
       setAnalysisError(
         err instanceof Error ? err.message : "Failed to run position analysis"
       );
     } finally {
       setIsAnalyzing(false);
+      setRefining(false);
     }
-  }, [currentGame, isAnalyzing, depth, setIsAnalyzing, setAnalysisError, setAnalysisProgress, setAnalysis, setMoveAnalyses, goToMove]);
+  }, [currentGame, isAnalyzing, setIsAnalyzing, setAnalysisError, setAnalysisProgress, setAnalysis, setMoveAnalyses, goToMove]);
 
   // Trigger analysis automatically
   useEffect(() => {
@@ -209,7 +230,7 @@ export default function GameReviewPage() {
 
           {/* Footer note & skip */}
           <div className="flex items-center justify-between w-full text-xs text-text-muted pt-2 border-t border-border/50">
-            <span>Engine: Stockfish 18 (Depth {depth})</span>
+            <span>Stockfish 18, depth {DEFAULT_ANALYZER_OPTIONS.depth}-{DEFAULT_ANALYZER_OPTIONS.refineDepth}</span>
             <button
               onClick={() => setSkippedGameId(gameId)}
               className="text-accent hover:underline text-xs"
@@ -262,11 +283,11 @@ export default function GameReviewPage() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={handleStartAnalysis}
+              onClick={() => handleStartAnalysis(true)}
               disabled={isAnalyzing}
               className="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border text-text-secondary font-medium text-xs rounded-lg transition-colors disabled:opacity-50"
             >
-              {isAnalyzing ? "Analyzing..." : "↻ Re-Analyze"}
+              {refining ? "Checking key moves..." : isAnalyzing ? "Analyzing..." : "↻ Re-Analyze"}
             </button>
             <ThemeToggle />
           </div>
