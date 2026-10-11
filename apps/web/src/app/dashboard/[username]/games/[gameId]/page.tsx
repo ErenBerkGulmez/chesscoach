@@ -244,7 +244,7 @@ export default function GameReviewPage() {
   });
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-background text-text-primary">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col bg-background text-text-primary">
       {/* Header */}
       <header className="bg-surface border-b border-border shrink-0 z-40">
         <div className="max-w-[1400px] mx-auto px-4 py-2.5 flex items-center justify-between">
@@ -283,25 +283,25 @@ export default function GameReviewPage() {
       </header>
 
       {/* Main Review Layout */}
-      <div className="flex-1 max-w-[1400px] w-full mx-auto p-4 flex gap-6 overflow-hidden">
+      <div className="flex-1 max-w-[1400px] w-full mx-auto p-2 sm:p-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:overflow-hidden">
         {/* Board Section */}
-        <div className="flex-1 flex flex-col items-center justify-between overflow-hidden min-w-0">
-          <div className="flex-1 flex items-center justify-center w-full min-h-0">
+        <div className="lg:flex-1 flex flex-col items-center justify-between lg:overflow-hidden min-w-0 w-full">
+          <div className="lg:flex-1 flex items-center justify-center w-full max-w-[min(100%,70vh)] lg:max-w-none min-h-0">
             <ChessBoard />
           </div>
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-[450px] flex flex-col shrink-0 h-full overflow-hidden gap-3">
+        <div className="w-full lg:w-[450px] flex flex-col shrink-0 lg:h-full lg:overflow-hidden gap-3 min-w-0">
           {/* Coach & Position Meters Panel */}
-          <div className="max-h-[45%] overflow-y-auto shrink-0 space-y-3 pr-1">
+          <div className="lg:max-h-[45%] lg:overflow-y-auto shrink-0 space-y-3 lg:pr-1">
             {currentGame && <AICoachPanel />}
             <PositionMeters />
             <EngineLines />
           </div>
 
           {/* Move List & Performance Stats */}
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
+          <div className="lg:flex-1 min-h-0 lg:overflow-y-auto lg:pr-1 space-y-3">
             {/* Move List Card */}
             <div className="glass-card p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between border-b border-border pb-2">

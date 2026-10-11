@@ -33,3 +33,10 @@ describe("evalToBarPercentage", () => {
     expect(evalToBarPercentage(-400, null)).toBeLessThan(20);
   });
 });
+
+describe("safeHashMb", () => {
+  it("keeps the default hash outside the browser", async () => {
+    const { safeHashMb } = await import("./engine");
+    expect(safeHashMb()).toBe(64);
+  });
+});
