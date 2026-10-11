@@ -1,7 +1,7 @@
 "use client";
 
 import { useAnalysisStore } from "@/stores/analysis-store";
-import { motion } from "framer-motion";
+import { useShallow } from "zustand/react/shallow";
 
 /**
  * Board Navigation Controls
@@ -9,16 +9,9 @@ import { motion } from "framer-motion";
  * Move navigation and board flip. Complements keyboard shortcuts.
  */
 export default function BoardControls() {
-  const {
-    currentMoveIndex,
-    moves,
-    isFlipped,
-    goToStart,
-    goBackward,
-    goForward,
-    goToEnd,
-    flipBoard,
-  } = useAnalysisStore();
+  const { currentMoveIndex, moves, isFlipped, goToStart, goBackward, goForward, goToEnd, flipBoard } = useAnalysisStore(
+    useShallow((s) => ({ currentMoveIndex: s.currentMoveIndex, moves: s.moves, isFlipped: s.isFlipped, goToStart: s.goToStart, goBackward: s.goBackward, goForward: s.goForward, goToEnd: s.goToEnd, flipBoard: s.flipBoard }))
+  );
 
   const isAtStart = currentMoveIndex <= -1;
   const isAtEnd = currentMoveIndex >= moves.length - 1;
@@ -116,8 +109,7 @@ function NavButton({
   icon: React.ReactNode;
 }) {
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
+    <button
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
@@ -125,7 +117,7 @@ function NavButton({
       className="w-11 h-10 flex items-center justify-center rounded-lg bg-surface border border-border text-text-secondary hover:bg-surface-hover hover:text-accent hover:border-accent/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-surface disabled:hover:text-text-secondary disabled:hover:border-border"
     >
       {icon}
-    </motion.button>
+    </button>
   );
 }
 
@@ -141,8 +133,7 @@ function ToolButton({
   icon: React.ReactNode;
 }) {
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
+    <button
       onClick={onClick}
       aria-label={label}
       title={label}
@@ -153,6 +144,6 @@ function ToolButton({
       }`}
     >
       {icon}
-    </motion.button>
+    </button>
   );
 }

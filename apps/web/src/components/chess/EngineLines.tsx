@@ -2,22 +2,14 @@
 
 import { useMemo } from "react";
 import { useAnalysisStore } from "@/stores/analysis-store";
+import { useShallow } from "zustand/react/shallow";
 import { formatEval } from "@/lib/stockfish/engine";
 import { Chess } from "chess.js";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function EngineLines() {
-  const {
-    currentMoveIndex,
-    moveAnalyses,
-    isExploring,
-    explorationIndex,
-    explorationMoves,
-    startExploration,
-    stepForwardExploration,
-    stepBackwardExploration,
-    exitExploration,
-  } = useAnalysisStore();
+  const { currentMoveIndex, moveAnalyses, isExploring, explorationIndex, explorationMoves, startExploration, stepForwardExploration, stepBackwardExploration, exitExploration } = useAnalysisStore(
+    useShallow((s) => ({ currentMoveIndex: s.currentMoveIndex, moveAnalyses: s.moveAnalyses, isExploring: s.isExploring, explorationIndex: s.explorationIndex, explorationMoves: s.explorationMoves, startExploration: s.startExploration, stepForwardExploration: s.stepForwardExploration, stepBackwardExploration: s.stepBackwardExploration, exitExploration: s.exitExploration }))
+  );
 
   const currentAnalysis =
     currentMoveIndex < 0 ? null : moveAnalyses[currentMoveIndex] ?? null;
@@ -99,16 +91,10 @@ export default function EngineLines() {
           </div>
         </div>
       )}
-
-      <AnimatePresence mode="popLayout">
         <div className="space-y-1.5">
           {lines.map((line) => (
-            <motion.div
+            <div
               key={`${line.rank}-${line.score}`}
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, delay: line.rank * 0.03 }}
               className="flex items-start gap-2 group"
             >
               <div
@@ -138,10 +124,9 @@ export default function EngineLines() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
-      </AnimatePresence>
     </div>
   );
 }

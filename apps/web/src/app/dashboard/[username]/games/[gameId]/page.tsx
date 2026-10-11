@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePlayerStore } from "@/stores/player-store";
+import { useShallow } from "zustand/react/shallow";
 import { useAnalysisStore } from "@/stores/analysis-store";
-import { analyzeGame } from "@/lib/stockfish/analyzer";
 import { loadCachedAnalysis, saveCachedAnalysis } from "@/lib/analysis/cache";
 import ChessBoard from "@/components/chess/ChessBoard";
 import BoardControls from "@/components/chess/BoardControls";
@@ -25,24 +25,13 @@ export default function GameReviewPage() {
   const username = params.username as string;
   const gameId = params.gameId as string;
 
-  const { games, setUsername, setProfile, setGames } = usePlayerStore();
+  const { games, setUsername, setProfile, setGames } = usePlayerStore(
+    useShallow((s) => ({ games: s.games, setUsername: s.setUsername, setProfile: s.setProfile, setGames: s.setGames }))
+  );
 
-  const {
-    currentGame,
-    gameAnalysis,
-    moveAnalyses,
-    isAnalyzing,
-    analysisProgress,
-    analysisError,
-    setGame,
-    setAnalysis,
-    setMoveAnalyses,
-    setIsAnalyzing,
-    setAnalysisProgress,
-    setAnalysisError,
-    clearGame,
-    goToMove,
-  } = useAnalysisStore();
+  const { currentGame, gameAnalysis, moveAnalyses, isAnalyzing, analysisProgress, analysisError, setGame, setAnalysis, setMoveAnalyses, setIsAnalyzing, setAnalysisProgress, setAnalysisError, clearGame, goToMove } = useAnalysisStore(
+    useShallow((s) => ({ currentGame: s.currentGame, gameAnalysis: s.gameAnalysis, moveAnalyses: s.moveAnalyses, isAnalyzing: s.isAnalyzing, analysisProgress: s.analysisProgress, analysisError: s.analysisError, setGame: s.setGame, setAnalysis: s.setAnalysis, setMoveAnalyses: s.setMoveAnalyses, setIsAnalyzing: s.setIsAnalyzing, setAnalysisProgress: s.setAnalysisProgress, setAnalysisError: s.setAnalysisError, clearGame: s.clearGame, goToMove: s.goToMove }))
+  );
 
   const [isSyncingLocal, setIsSyncingLocal] = useState(false);
   const [refining, setRefining] = useState(false);
@@ -116,7 +105,7 @@ export default function GameReviewPage() {
       let shown = false;
       const results =
         cached ??
-        (await analyzeGame(currentGame.moves, currentGame.id, {
+        (await (await import("@/lib/stockfish/analyzer")).analyzeGame(currentGame.moves, currentGame.id, {
           playerColor: currentGame.playerColor,
           signal: controller.signal,
           onProgress: (done, total) => {

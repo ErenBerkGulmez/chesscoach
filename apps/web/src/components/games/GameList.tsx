@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import type { ParsedGame } from "@/types/chess";
 import { GameResult, TimeClass } from "@/types/chess";
-import { motion } from "framer-motion";
 
 interface GameListProps {
   games: ParsedGame[];
@@ -65,11 +64,8 @@ export default function GameList({ games, username }: GameListProps) {
         const timeIcon = TIME_CLASS_ICONS[game.timeClass];
 
         return (
-          <motion.button
+          <button
             key={game.id || idx}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, delay: Math.min(idx * 0.02, 0.3) }}
             onClick={() =>
               router.push(`/dashboard/${username}/games/${game.id}`)
             }
@@ -124,7 +120,7 @@ export default function GameList({ games, username }: GameListProps) {
                 {format(game.playedAt, "yyyy")}
               </p>
             </div>
-          </motion.button>
+          </button>
         );
       })}
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import { motion } from "framer-motion";
 
 type Theme = "dark" | "light";
 
@@ -14,7 +13,7 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-// The inline script in the root layout sets data-theme before first paint,
+// The inline script in the root sets data-theme before first paint,
 // so the DOM attribute is the source of truth.
 function getTheme(): Theme {
   return document.documentElement.getAttribute("data-theme") === "light"
@@ -47,8 +46,7 @@ export default function ThemeToggle() {
   }, [theme]);
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
+    <button
       onClick={toggle}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
@@ -89,6 +87,6 @@ export default function ThemeToggle() {
           <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
         </svg>
       )}
-    </motion.button>
+    </button>
   );
 }

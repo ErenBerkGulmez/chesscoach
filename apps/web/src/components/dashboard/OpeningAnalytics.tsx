@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { usePlayerStore } from "@/stores/player-store";
+import { useShallow } from "zustand/react/shallow";
 import {
   OpeningCategoryKey,
   CategorizedOpeningStat,
@@ -78,7 +79,9 @@ const CATEGORIES: {
 const ITEMS_PER_PAGE = 10;
 
 export default function OpeningAnalytics() {
-  const { games, username } = usePlayerStore();
+  const { games, username } = usePlayerStore(
+    useShallow((s) => ({ games: s.games, username: s.username }))
+  );
   const router = useRouter();
 
   // Active category tab
