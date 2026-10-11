@@ -2,6 +2,7 @@
   "name": "chess-coach",
   "version": "1.0.0",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "description": "Chess coaching that you can tailor for yourself",
   "scripts": {
     "dev": "npm --prefix apps/web run dev",

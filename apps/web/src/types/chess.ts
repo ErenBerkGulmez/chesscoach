@@ -51,6 +51,21 @@ export enum ExplanationLevel {
 }
 
 // ─── Move Classification Styling ────────────────────────────────
+// Symbols follow standard chess annotation (!!, !, ?!, ?, ??). The wording
+// and colours are this app's own.
+
+const tint = (hex: string, alpha: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+};
+
+const style = (label: string, symbol: string, color: string, alpha: number, description: string) => ({
+  label,
+  symbol,
+  color,
+  bgColor: tint(color, alpha),
+  description,
+});
 
 export const CLASSIFICATION_CONFIG: Record<MoveClassification, {
   label: string;
@@ -59,76 +74,16 @@ export const CLASSIFICATION_CONFIG: Record<MoveClassification, {
   bgColor: string;
   description: string;
 }> = {
-  [MoveClassification.BRILLIANT]: {
-    label: 'Brilliant',
-    symbol: '!!',
-    color: '#1bada6',
-    bgColor: 'rgba(27, 173, 166, 0.15)',
-    description: 'An exceptional move that requires deep calculation',
-  },
-  [MoveClassification.GREAT]: {
-    label: 'Great',
-    symbol: '!',
-    color: '#5c8bb0',
-    bgColor: 'rgba(92, 139, 176, 0.15)',
-    description: 'A strong move that finds a non-obvious solution',
-  },
-  [MoveClassification.BEST]: {
-    label: 'Best',
-    symbol: '★',
-    color: '#96bc4b',
-    bgColor: 'rgba(150, 188, 75, 0.15)',
-    description: 'The engine\'s top choice',
-  },
-  [MoveClassification.EXCELLENT]: {
-    label: 'Excellent',
-    symbol: '◆',
-    color: '#96bc4b',
-    bgColor: 'rgba(150, 188, 75, 0.10)',
-    description: 'A very strong move with minimal evaluation loss',
-  },
-  [MoveClassification.GOOD]: {
-    label: 'Good',
-    symbol: '●',
-    color: '#a3b86c',
-    bgColor: 'rgba(163, 184, 108, 0.10)',
-    description: 'A solid move',
-  },
-  [MoveClassification.INACCURACY]: {
-    label: 'Inaccuracy',
-    symbol: '?!',
-    color: '#f7c631',
-    bgColor: 'rgba(247, 198, 49, 0.15)',
-    description: 'A suboptimal move that slightly worsens the position',
-  },
-  [MoveClassification.MISTAKE]: {
-    label: 'Mistake',
-    symbol: '?',
-    color: '#e58f2a',
-    bgColor: 'rgba(229, 143, 42, 0.15)',
-    description: 'A bad move that significantly worsens the position',
-  },
-  [MoveClassification.BLUNDER]: {
-    label: 'Blunder',
-    symbol: '??',
-    color: '#ca3431',
-    bgColor: 'rgba(202, 52, 49, 0.15)',
-    description: 'A terrible move that loses significant material or advantage',
-  },
-  [MoveClassification.MISSED_WIN]: {
-    label: 'Missed Win',
-    symbol: '△',
-    color: '#ca3431',
-    bgColor: 'rgba(202, 52, 49, 0.10)',
-    description: 'Failed to convert a winning position',
-  },
-  [MoveClassification.MISSED_MATE]: {
-    label: 'Missed Mate',
-    symbol: '✕',
-    color: '#ca3431',
-    bgColor: 'rgba(202, 52, 49, 0.20)',
-    description: 'Failed to play a forced checkmate',
-  },
+  [MoveClassification.BRILLIANT]: style('Inspired', '!!', '#8b5cf6', 0.18, 'A hard-to-find move, usually a sacrifice that works'),
+  [MoveClassification.GREAT]: style('Sharp', '!', '#3b82c4', 0.18, 'A strong move that was not obvious'),
+  [MoveClassification.BEST]: style('Top move', '✓', '#2f9e6e', 0.18, "The engine's first choice"),
+  [MoveClassification.EXCELLENT]: style('Accurate', '≈', '#2f9e6e', 0.12, 'Almost as good as the top move'),
+  [MoveClassification.GOOD]: style('Solid', '·', '#7a8f9a', 0.12, 'A reasonable move'),
+  [MoveClassification.INACCURACY]: style('Inaccuracy', '?!', '#d1a11f', 0.18, 'Gives up a little of your position'),
+  [MoveClassification.MISTAKE]: style('Mistake', '?', '#d9742b', 0.18, 'Makes your position clearly worse'),
+  [MoveClassification.BLUNDER]: style('Blunder', '??', '#c2334d', 0.2, 'Loses material or the game'),
+  [MoveClassification.MISSED_WIN]: style('Missed win', '⊘', '#c2334d', 0.12, 'Let a winning position slip'),
+  [MoveClassification.MISSED_MATE]: style('Missed mate', '#?', '#c2334d', 0.2, 'Did not play a forced checkmate'),
 };
 
 // ─── Core Data Types ────────────────────────────────────────────
@@ -213,6 +168,8 @@ export interface ParsedMove {
   isCheck: boolean;
   isCastle: boolean;
   isPromotion: boolean;
+  /** Time left on the mover's clock after the move, when the PGN has clocks. */
+  clockMs?: number;
 }
 
 // ─── Analysis Types ─────────────────────────────────────────────

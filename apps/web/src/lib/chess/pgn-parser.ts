@@ -9,6 +9,7 @@ import { Chess } from 'chess.js';
 import type { ChessComGame, ParsedGame, ParsedMove } from '@/types/chess';
 import { PlayerColor, TimeClass, GameResult } from '@/types/chess';
 import { parseResult } from '@/lib/api/chess-com';
+import { parseClocks } from './clock';
 
 /**
  * Parse a Chess.com game into our internal format.
@@ -67,6 +68,9 @@ export function parsePgnMoves(pgn: string): ParsedMove[] {
   const chess = new Chess();
   const moves: ParsedMove[] = [];
 
+  // Clock readings live in comments, so read them before comments are stripped.
+  const clocks = parseClocks(pgn);
+
   // Strip clock annotations, brackets, NAGs, RAVs, and comments to prevent chess.js parser crash
   const cleanPgn = pgn
     .replace(/\{.*?\}/g, '') // Remove standard comments like {[%clk 0:02:59]}
@@ -105,6 +109,8 @@ export function parsePgnMoves(pgn: string): ParsedMove[] {
 
   if (loaded) {
     const history = chess.history({ verbose: true });
+    // Only trust the clocks when there is exactly one per move.
+    const hasClocks = clocks.length === history.length;
     
     // Reset and replay to get FEN at each position
     chess.reset();
@@ -129,6 +135,7 @@ export function parsePgnMoves(pgn: string): ParsedMove[] {
         isCheck: chess.isCheck(),
         isCastle: move.san === 'O-O' || move.san === 'O-O-O',
         isPromotion: !!move.promotion,
+        ...(hasClocks ? { clockMs: clocks[i] } : {}),
       });
     }
   }

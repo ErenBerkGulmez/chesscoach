@@ -1,7 +1,7 @@
 /**
  * Opening Classifier & Analytics Engine
  * 
- * Accurately categorizes games into four independent opening datasets:
+ * Categorizes games into four independent opening datasets:
  * 1. Openings I played as White (White Opening Choice)
  * 2. Defenses opponents played against my White games (Black Defenses vs my White)
  * 3. Openings I played as Black (Black Defenses I chose)
@@ -15,6 +15,7 @@ import {
   OpeningCategoryKey,
   CategorizedOpeningStat,
 } from '@/types/chess';
+import { openingFamily, sideChoices, type OpeningBook } from './opening-book';
 
 export interface ClassifiedOpening {
   /** The opening system chosen by White */
@@ -31,143 +32,22 @@ export interface ClassifiedOpening {
   };
 }
 
-/** Known Black defense keywords */
-const BLACK_DEFENSE_KEYWORDS = [
-  'defense',
-  'defence',
-  'countergambit',
-  'counterattack',
-  'declined',
-  'accepted',
-  'sicilian',
-  'french',
-  'caro-kann',
-  'scandinavian',
-  'king\'s indian',
-  'nimzo-indian',
-  'queen\'s indian',
-  'bogo-indian',
-  'grünfeld',
-  'grunfeld',
-  'slav',
-  'semi-slav',
-  'dutch',
-  'pirc',
-  'alekhine',
-  'petrov',
-  'benoni',
-  'modern',
-  'englund',
-  'chigorin',
-  'budapest',
-  'albin',
-  'stafford',
-  'lasker',
-  'tartakower',
-  'cambridge',
-  'tarrasch',
-  'horwitz',
-  'rat',
-  'owen',
-];
-
 /**
- * Classify a game's opening into White Choice vs Black Choice.
+ * Classify a game's opening into White's choice and Black's choice.
+ *
+ * With the opening book, each side's choice is the deepest named position
+ * that arose from one of its own moves. Without it (still loading, or the
+ * game left book on move one) both fall back to the name Chess.com gave.
  */
-export function classifyGameOpening(game: ParsedGame): ClassifiedOpening {
+export function classifyGameOpening(game: ParsedGame, book?: OpeningBook | null): ClassifiedOpening {
   const rawName = (game.openingName || 'Unknown Opening').trim();
-  const eco = (game.eco || '').trim();
+  const fallback = { family: openingFamily(rawName), detailed: rawName, eco: (game.eco || '').trim() };
+  if (!book) return { whiteChoice: fallback, blackChoice: fallback };
 
-  // Split into main family and variation
-  const parts = rawName.split(':');
-  const mainFamily = parts[0].trim();
-  const subVariation = parts[1] ? parts[1].trim() : '';
-
-  const lowerName = rawName.toLowerCase();
-  const lowerFamily = mainFamily.toLowerCase();
-
-  const isBlackDefenseName = BLACK_DEFENSE_KEYWORDS.some((kw) =>
-    lowerFamily.includes(kw)
-  );
-
-  let whiteFamily = '';
-  let whiteDetailed = '';
-
-  let blackFamily = '';
-  let blackDetailed = '';
-
-  if (isBlackDefenseName) {
-    // The opening name describes Black's defense
-    blackFamily = mainFamily;
-    blackDetailed = rawName;
-
-    // Determine White's system from move 1 or variation
-    if (subVariation) {
-      whiteFamily = `${mainFamily} (${subVariation})`;
-      whiteDetailed = rawName;
-    } else {
-      whiteFamily = getFirstMoveSystem(game.moves[0]?.san) || mainFamily;
-      whiteDetailed = whiteFamily;
-    }
-  } else {
-    // The opening name describes White's opening system
-    whiteFamily = mainFamily;
-    whiteDetailed = rawName;
-
-    if (subVariation) {
-      blackFamily = subVariation;
-      blackDetailed = rawName;
-    } else {
-      blackFamily = getFirstMoveBlackResponse(game.moves[1]?.san) || `${mainFamily} Response`;
-      blackDetailed = blackFamily;
-    }
-  }
-
-  return {
-    whiteChoice: {
-      family: whiteFamily,
-      detailed: whiteDetailed,
-      eco,
-    },
-    blackChoice: {
-      family: blackFamily,
-      detailed: blackDetailed,
-      eco,
-    },
-  };
-}
-
-/**
- * Fallback to determine White's 1st move opening system
- */
-function getFirstMoveSystem(san?: string): string {
-  if (!san) return 'White System';
-  if (san === 'e4') return 'King\'s Pawn Opening (1.e4)';
-  if (san === 'd4') return 'Queen\'s Pawn Opening (1.d4)';
-  if (san === 'c4') return 'English Opening (1.c4)';
-  if (san === 'Nf3') return 'Réti Opening (1.Nf3)';
-  if (san === 'f4') return 'Bird\'s Opening (1.f4)';
-  if (san === 'b3') return 'Nimzowitsch-Larsen Attack (1.b3)';
-  if (san === 'g3') return 'Hungarian Opening (1.g3)';
-  if (san === 'b4') return 'Sokolsky / Polish Opening (1.b4)';
-  return 'Flank Opening';
-}
-
-/**
- * Fallback to determine Black's 1st move response
- */
-function getFirstMoveBlackResponse(san?: string): string {
-  if (!san) return 'Black Response';
-  if (san === 'e5') return 'Open Game (1...e5)';
-  if (san === 'c5') return 'Sicilian Defense (1...c5)';
-  if (san === 'e6') return 'French Defense (1...e6)';
-  if (san === 'c6') return 'Caro-Kann Defense (1...c6)';
-  if (san === 'd5') return 'Closed Game (1...d5)';
-  if (san === 'Nf6') return 'Indian Defense (1...Nf6)';
-  if (san === 'd6') return 'Pirc Defense (1...d6)';
-  if (san === 'g6') return 'Modern Defense (1...g6)';
-  if (san === 'f5') return 'Dutch Defense (1...f5)';
-  return 'Black Defense';
+  const { white, black } = sideChoices(game.moves, book);
+  const choice = (entry: { name: string; eco: string } | null) =>
+    entry ? { family: openingFamily(entry.name), detailed: entry.name, eco: entry.eco } : fallback;
+  return { whiteChoice: choice(white ?? black), blackChoice: choice(black ?? white) };
 }
 
 export type OpeningSortBy =
@@ -185,6 +65,8 @@ export interface ComputeOpeningStatsOptions {
   searchQuery?: string;
   sortBy?: OpeningSortBy;
   sortOrder?: 'asc' | 'desc';
+  /** Opening names by position. Without it, the names from Chess.com are used. */
+  book?: OpeningBook | null;
 }
 
 /**
@@ -207,6 +89,7 @@ export function computeOpeningCategoryStats(
     searchQuery = '',
     sortBy = 'games',
     sortOrder = 'desc',
+    book = null,
   } = options;
 
   // 1. Filter games by player color according to category
@@ -255,7 +138,7 @@ export function computeOpeningCategoryStats(
   >();
 
   for (const game of categoryGames) {
-    const classified = classifyGameOpening(game);
+    const classified = classifyGameOpening(game, book);
 
     let openingData: { family: string; detailed: string; eco: string };
 

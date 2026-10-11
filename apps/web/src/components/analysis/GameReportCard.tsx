@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useAnalysisStore } from "@/stores/analysis-store";
 import { buildGameReport } from "@/lib/coach/report";
+import { baseTimeMs } from "@/lib/chess/clock";
 import type { MoveAnalysis, PlayerColor } from "@/types/chess";
 
 const SEVERITY_DOT = {
@@ -22,7 +23,16 @@ export default function GameReportCard({ moves, playerColor }: { moves: MoveAnal
       document.getElementById("coach-panel")?.scrollIntoView({ behavior: "smooth", block: "nearest" })
     );
   };
-  const report = useMemo(() => buildGameReport(moves, playerColor), [moves, playerColor]);
+  const game = useAnalysisStore((s) => s.currentGame);
+  const report = useMemo(
+    () =>
+      buildGameReport(
+        moves,
+        playerColor,
+        game ? { clocks: game.moves.map((m) => m.clockMs), baseMs: baseTimeMs(game.timeControl) } : undefined
+      ),
+    [moves, playerColor, game]
+  );
   const [open, setOpen] = useState(true);
 
   return (
@@ -64,6 +74,19 @@ export default function GameReportCard({ moves, playerColor }: { moves: MoveAnal
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {report.timeTrouble && (
+            <div className="space-y-1">
+              <h3 className="text-xs font-semibold text-text-muted">Time trouble</h3>
+              <button
+                type="button"
+                onClick={() => goToMove(report.timeTrouble!.indices[0])}
+                className="w-full text-left text-sm text-text-secondary rounded-md px-2 py-1.5 hover:bg-surface-hover transition-colors"
+              >
+                {report.timeTrouble.line}
+              </button>
             </div>
           )}
 

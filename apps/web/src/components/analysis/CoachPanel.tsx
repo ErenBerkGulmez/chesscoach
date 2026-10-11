@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useAnalysisStore } from "@/stores/analysis-store";
 import { explainMove, type Severity } from "@/lib/coach/explain";
+import { baseTimeMs } from "@/lib/chess/clock";
 import { PlayerColor } from "@/types/chess";
 
 const SEVERITY_STYLE: Record<Severity, string> = {
@@ -32,7 +33,12 @@ export default function CoachPanel() {
     }
   }, [currentMoveIndex, isExploring, isAnalyzing, analysis, analyzeMove]);
 
-  const explanation = useMemo(() => (analysis ? explainMove(analysis) : null), [analysis]);
+  const clockMs = useAnalysisStore((s) => s.currentGame?.moves[currentMoveIndex]?.clockMs);
+  const timeControl = useAnalysisStore((s) => s.currentGame?.timeControl);
+  const explanation = useMemo(
+    () => (analysis ? explainMove(analysis, { clockMs, baseMs: baseTimeMs(timeControl) }) : null),
+    [analysis, clockMs, timeControl]
+  );
 
   if (!analysis || !explanation) {
     return (
@@ -72,7 +78,14 @@ export default function CoachPanel() {
     <section id="coach-panel" className="glass-card p-4 space-y-3">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-xs font-semibold text-text-muted">Coach</h2>
-        <span className="text-xs font-mono text-text-muted tabular-nums">{explanation.evalChange}</span>
+        <span className="text-xs font-mono text-text-muted tabular-nums">
+          {explanation.clock && (
+            <span className={explanation.timeTrouble ? "text-blunder" : undefined} title="Time left on your clock after this move">
+              {explanation.clock} left ·{" "}
+            </span>
+          )}
+          {explanation.evalChange}
+        </span>
       </div>
 
       <p className={`text-base font-semibold leading-snug ${SEVERITY_STYLE[explanation.severity]}`}>
