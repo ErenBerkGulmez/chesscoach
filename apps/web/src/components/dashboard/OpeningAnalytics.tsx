@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -15,6 +15,8 @@ import {
   computeOpeningCategoryStats,
   OpeningSortBy,
 } from "@/lib/chess/opening-classifier";
+import { loadOpeningBook, type OpeningBook } from "@/lib/chess/opening-book";
+import OpeningTree from "./OpeningTree";
 import {
   BarChart,
   Bar,
@@ -84,6 +86,18 @@ export default function OpeningAnalytics() {
   );
   const router = useRouter();
 
+  // Opening names by position. Until it loads, the names from Chess.com are used.
+  const [book, setBook] = useState<OpeningBook | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadOpeningBook().then((b) => {
+      if (!cancelled) setBook(b);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Active category tab
   const [activeCategoryKey, setActiveCategoryKey] = useState<OpeningCategoryKey>(
     OpeningCategoryKey.WHITE_PLAYER_OPENINGS
@@ -111,8 +125,9 @@ export default function OpeningAnalytics() {
       searchQuery,
       sortBy,
       sortOrder,
+      book,
     });
-  }, [games, activeCategoryKey, groupMode, searchQuery, sortBy, sortOrder]);
+  }, [games, activeCategoryKey, groupMode, searchQuery, sortBy, sortOrder, book]);
 
   const { stats, totalGames, totalWins, totalLosses, totalDraws, winRate } =
     categoryResult;
@@ -154,6 +169,8 @@ export default function OpeningAnalytics() {
 
   return (
     <div className="space-y-6">
+      <OpeningTree games={games} username={username} book={book} />
+
       {/* ─── Header & Category Tabs ──────────────────────────────── */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
@@ -162,7 +179,7 @@ export default function OpeningAnalytics() {
               <span>📖 Opening Analytics</span>
             </h2>
             <p className="text-xs text-text-muted">
-              Independently categorized stats for White vs Black choices
+              Openings named by the positions you reached, split into what you chose and what you faced
             </p>
           </div>
 
@@ -420,7 +437,7 @@ export default function OpeningAnalytics() {
                     />
                     <Bar dataKey="wins" stackId="a" fill="#81b64c" radius={[0, 0, 0, 0]} />
                     <Bar dataKey="draws" stackId="a" fill="#5f6368" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="losses" stackId="a" fill="#ca3431" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="losses" stackId="a" fill="#c2334d" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 ) : chartView === "winRate" ? (
                   <BarChart
@@ -442,7 +459,7 @@ export default function OpeningAnalytics() {
                       fontSize={11}
                       width={140}
                     />
-                    <ReferenceLine x={50} stroke="#f7c631" strokeDasharray="3 3" />
+                    <ReferenceLine x={50} stroke="#d1a11f" strokeDasharray="3 3" />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#1a1f27",
@@ -456,7 +473,7 @@ export default function OpeningAnalytics() {
                       {chartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={entry.winRate >= 50 ? "#81b64c" : "#e58f2a"}
+                          fill={entry.winRate >= 50 ? "#81b64c" : "#d9742b"}
                         />
                       ))}
                     </Bar>
@@ -826,11 +843,11 @@ import { Fragment } from "react";
 
 const PIE_COLORS = [
   "#81b64c",
-  "#5c8bb0",
-  "#f7c631",
-  "#1bada6",
-  "#e58f2a",
-  "#ca3431",
-  "#96bc4b",
-  "#a3b86c",
+  "#3b82c4",
+  "#d1a11f",
+  "#8b5cf6",
+  "#d9742b",
+  "#c2334d",
+  "#2f9e6e",
+  "#7a8f9a",
 ];
