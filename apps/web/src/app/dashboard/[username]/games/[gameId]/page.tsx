@@ -10,7 +10,8 @@ import ChessBoard from "@/components/chess/ChessBoard";
 import BoardControls from "@/components/chess/BoardControls";
 import MoveList from "@/components/chess/MoveList";
 import EngineLines from "@/components/chess/EngineLines";
-import AICoachPanel from "@/components/analysis/AICoachPanel";
+import CoachPanel from "@/components/analysis/CoachPanel";
+import GameReportCard from "@/components/analysis/GameReportCard";
 import GameSummary from "@/components/analysis/GameSummary";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 
@@ -275,7 +276,10 @@ export default function GameReviewPage() {
 
         {/* Sidebar */}
         <div className="w-full lg:w-[420px] shrink-0 flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1 pb-4">
-          <AICoachPanel />
+          {gameAnalysis && (
+            <GameReportCard moves={gameAnalysis.moves} playerColor={currentGame.playerColor} />
+          )}
+          <CoachPanel />
           {gameAnalysis && <GameSummary analysis={gameAnalysis} />}
           <EngineLines />
           <section className="glass-card p-3">

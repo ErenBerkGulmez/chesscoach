@@ -7,7 +7,7 @@ import type { GameAnalysis } from '@/types/chess';
 const DB_NAME = 'chesscoach';
 const STORE = 'analyses';
 /** Bump when the analysis format or engine settings change. */
-export const CACHE_VERSION = 2;
+export const CACHE_VERSION = 3;
 
 function cacheKey(gameId: string) {
   return `${gameId}:v${CACHE_VERSION}`;

@@ -252,6 +252,8 @@ export interface MoveAnalysis {
 
   // Alternative lines
   pvLines: EngineEvaluation[];
+  /** Opponent's best reply line (SAN) after the played move. */
+  replyLine?: string[];
 
   // Classification
   classification: MoveClassification;
