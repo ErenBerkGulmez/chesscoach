@@ -9,7 +9,9 @@ Everything runs in your browser: no account, no server, no API keys. Game data c
 - **Game list** for any public Chess.com account, with search, filters and sorting.
 - **Game review**: interactive board, evaluation bar and graph, move classifications (best, inaccuracy, mistake, blunder, …), engine lines, and a coach panel that explains each move.
 - **Explore variations** by dragging pieces on the board; the engine evaluates the new position.
+- **Clock-aware coaching**: the coach shows how much time you had left on each move and the game report counts the costly mistakes you made in time trouble.
 - **Statistics**: results by colour and time control, and opening analytics split into the openings you choose and the ones you face.
+- **Opening tree**: every line you have reached as White or Black, with games, score and the evaluation after move 10. Openings are named by position, so transpositions get the right name.
 - Dark and light themes; keyboard navigation (`←` `→` `Home` `End`, `F` to flip).
 
 ## How the review works
@@ -26,7 +28,9 @@ Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · 
 
 ```
 apps/web/
-├── public/stockfish/        Stockfish 18 WASM build (vendored)
+├── public/stockfish/        Stockfish 18 WASM build (vendored, GPL-3.0, see NOTICE.txt)
+├── public/openings/         Opening names by position (built by scripts/build-openings.mjs)
+├── scripts/                 Data build scripts, not shipped with the app
 └── src/
     ├── app/                 Routes: landing, dashboard, game review
     ├── components/          Board, move list, coach panel, dashboard widgets
@@ -34,6 +38,7 @@ apps/web/
     ├── lib/chess/           PGN parsing, move classification, openings
     ├── lib/engine/          Explanation rules
     ├── lib/stockfish/       Stockfish worker wrapper and game analyzer
+    ├── lib/storage/         IndexedDB database (analysis cache and training data)
     ├── stores/              Zustand stores
     └── types/               Shared types
 ```
@@ -64,3 +69,12 @@ Run from `apps/web` (or from the repository root, which forwards to it):
 | `npm test` | Unit tests (Vitest) |
 
 CI runs lint, typecheck, tests and build on every pull request.
+
+## License
+
+Chess Coach is free software, licensed under the [GNU General Public License v3.0](LICENSE) or (at your option) any later version.
+
+It includes and builds on:
+
+- **Stockfish 18** via [Stockfish.js](https://github.com/nmrugg/stockfish.js), GPL-3.0. See [`apps/web/public/stockfish/NOTICE.txt`](apps/web/public/stockfish/NOTICE.txt) for the notice and source links.
+- **Opening names** from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings), released into the public domain under CC0.

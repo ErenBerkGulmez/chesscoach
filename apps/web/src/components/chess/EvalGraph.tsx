@@ -127,12 +127,12 @@ export default function EvalGraph() {
 
           {svgPaths.pointsWithCoords.map((p, idx) => {
             if (!p.classification) return null;
-            let fill = "#a3b86c";
-            if (p.classification === MoveClassification.BRILLIANT) fill = "#1bada6";
-            if (p.classification === MoveClassification.GREAT) fill = "#5c8bb0";
-            if (p.classification === MoveClassification.BLUNDER) fill = "#ca3431";
-            if (p.classification === MoveClassification.MISTAKE) fill = "#e58f2a";
-            if (p.classification === MoveClassification.INACCURACY) fill = "#f7c631";
+            let fill = "#7a8f9a";
+            if (p.classification === MoveClassification.BRILLIANT) fill = "#8b5cf6";
+            if (p.classification === MoveClassification.GREAT) fill = "#3b82c4";
+            if (p.classification === MoveClassification.BLUNDER) fill = "#c2334d";
+            if (p.classification === MoveClassification.MISTAKE) fill = "#d9742b";
+            if (p.classification === MoveClassification.INACCURACY) fill = "#d1a11f";
 
             if (
               p.classification === MoveClassification.BRILLIANT ||

@@ -28,14 +28,14 @@
   --board-best: rgba(150, 188, 75, 0.4);
 
   /* Move classifications */
-  --brilliant: #1bada6;
-  --great: #5c8bb0;
-  --best: #96bc4b;
-  --excellent: #96bc4b;
-  --good: #a3b86c;
-  --inaccuracy: #f7c631;
-  --mistake: #e58f2a;
-  --blunder: #ca3431;
+  --brilliant: #8b5cf6;
+  --great: #3b82c4;
+  --best: #2f9e6e;
+  --excellent: #2f9e6e;
+  --good: #7a8f9a;
+  --inaccuracy: #d1a11f;
+  --mistake: #d9742b;
+  --blunder: #c2334d;
 
   /* Eval bar */
   --eval-white: #ffffff;

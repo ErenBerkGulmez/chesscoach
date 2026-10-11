@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 export default function LandingPage() {
   const [username, setUsername] = useState("");
@@ -42,8 +43,8 @@ export default function LandingPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <main className="flex flex-col items-center gap-8 max-w-md w-full">
+    <div className="min-h-screen flex flex-col items-center px-4">
+      <main className="flex-1 flex flex-col items-center justify-center gap-8 max-w-md w-full py-8">
         <div className="text-center">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-text-primary">
             <span className="text-accent">♞</span> Chess Coach
@@ -138,6 +139,7 @@ export default function LandingPage() {
           Free, no account needed. Analysis runs on your device.
         </p>
       </main>
+      <SiteFooter />
     </div>
   );
 }

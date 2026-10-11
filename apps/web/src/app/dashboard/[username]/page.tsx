@@ -21,6 +21,7 @@ const StatsOverview = dynamic(() => import("@/components/dashboard/StatsOverview
   loading: () => <p className="text-sm text-text-muted py-8 text-center">Loading statistics...</p>,
 });
 import ThemeToggle from "@/components/layout/ThemeToggle";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 export default function DashboardPage() {
   const params = useParams();
@@ -271,6 +272,7 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   );
 }
