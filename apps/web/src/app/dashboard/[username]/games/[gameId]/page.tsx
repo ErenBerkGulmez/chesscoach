@@ -274,9 +274,6 @@ export default function GameReviewPage() {
 
         {/* Sidebar */}
         <div className="w-full lg:w-[420px] shrink-0 flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1 pb-4">
-          {gameAnalysis && (
-            <GameReportCard moves={gameAnalysis.moves} playerColor={currentGame.playerColor} />
-          )}
           <CoachPanel />
           {gameAnalysis && <GameSummary analysis={gameAnalysis} />}
           <EngineLines />
@@ -286,6 +283,9 @@ export default function GameReviewPage() {
               <MoveList moves={currentGame.moves} />
             </div>
           </section>
+          {gameAnalysis && (
+            <GameReportCard moves={gameAnalysis.moves} playerColor={currentGame.playerColor} />
+          )}
         </div>
       </main>
     </div>
