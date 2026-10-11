@@ -5,12 +5,12 @@
  * Produces MoveAnalysis[] with classifications and evaluations.
  */
 
-import { Chess } from 'chess.js';
 import { StockfishEngine, type EvalResult } from '@/lib/stockfish/engine';
 import { classifyMove, calculateMoveAccuracy, type ClassificationInput } from '@/lib/chess/move-classifier';
+import { bestFromBefore, summarizePlayerMoves } from '@/lib/analysis/summary';
 import { getGamePhase } from '@/lib/chess/pgn-parser';
 import type { MoveAnalysis, ParsedMove, GameAnalysis } from '@/types/chess';
-import { MoveClassification, PlayerColor, AnalysisStatus } from '@/types/chess';
+import { PlayerColor, AnalysisStatus } from '@/types/chess';
 
 export interface AnalyzerOptions {
   depth: number;
@@ -18,6 +18,8 @@ export interface AnalyzerOptions {
   threads: number;
   onProgress?: (moveIndex: number, totalMoves: number, currentEval: EvalResult[]) => void;
   onMoveAnalyzed?: (analysis: MoveAnalysis) => void;
+  /** Side whose moves count towards accuracy and classification counts. Defaults to White. */
+  playerColor?: PlayerColor;
   signal?: AbortSignal;
 }
 
@@ -50,14 +52,19 @@ export async function analyzeGame(
     let prevMate: number | null = null;
 
     // First, evaluate the starting position
+    const startFen = moves[0]?.fenBefore ?? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     const startEval = await engine.evaluate(
-      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      startFen,
       { depth: opts.depth, multiPv: opts.multiPv }
     );
     if (startEval.length > 0) {
-      prevEval = startEval[0].score;
-      prevMate = startEval[0].mate;
+      // Raw scores are from the side to move; store them from White's side.
+      const whiteToMove = startFen.includes(' w ');
+      prevEval = whiteToMove ? startEval[0].score : -startEval[0].score;
+      prevMate = startEval[0].mate !== null ? (whiteToMove ? startEval[0].mate : -startEval[0].mate) : null;
     }
+    // Engine lines for the position BEFORE the current move.
+    let beforeLines: EvalResult[] = startEval;
 
     for (let i = 0; i < moves.length; i++) {
       // Check for abort
@@ -100,10 +107,12 @@ export async function analyzeGame(
       const mateAfterNorm = mateAfterWhite !== null ? (isWhiteMove ? mateAfterWhite : -mateAfterWhite) : null;
 
       // Get the engine's best move for the position BEFORE this move
-      const bestMoveUci = evalResults[0]?.pv[0] ?? null;
+      // (evalResults are for the position AFTER the move, i.e. the opponent's replies.)
+      const before = bestFromBefore(move.fenBefore, beforeLines);
+      const bestMoveUci = before.bestMove;
       const bestMoveEval = evalBeforeNorm;
       const bestMoveMate = mateBeforeNorm;
-      const isEngineBestMove = false;
+      const isEngineBestMove = bestMoveUci !== null && bestMoveUci === move.uci;
 
       // Build classification input
       const classInput: ClassificationInput = {
@@ -135,10 +144,6 @@ export async function analyzeGame(
       );
 
       // Convert PV to SAN notation
-      const pvSanLines = evalResults.map((ev) => ({
-        ...ev,
-        pvSan: uciPvToSan(move.fenBefore, ev.pv),
-      }));
 
       const analysis: MoveAnalysis = {
         moveNumber: move.moveNumber,
@@ -155,11 +160,11 @@ export async function analyzeGame(
         mateAfter: mateAfterWhite,
 
         bestMove: bestMoveUci,
-        bestMoveSan: bestMoveUci ? uciToSan(move.fenBefore, bestMoveUci) : null,
+        bestMoveSan: before.bestMoveSan,
         bestMoveEval: bestMoveEval,
         bestMoveMate: bestMoveMate,
 
-        pvLines: pvSanLines,
+        pvLines: before.pvLines,
 
         classification,
         moveAccuracy,
@@ -177,45 +182,27 @@ export async function analyzeGame(
       // Store current eval for next iteration (in White's absolute perspective)
       prevEval = evalAfterWhite;
       prevMate = mateAfterWhite;
+      beforeLines = evalResults;
     }
 
-    // Calculate aggregates
-    const playerMoves = moveAnalyses;
-    const accuracies = playerMoves.map((m) => m.moveAccuracy);
-    const avgAccuracy = accuracies.length > 0
-      ? accuracies.reduce((a, b) => a + b, 0) / accuracies.length
-      : 0;
-
-    const cplValues = playerMoves
-      .filter((m) => m.evalDelta !== null)
-      .map((m) => Math.max(0, -(m.evalDelta ?? 0)));
-    const avgCpl = cplValues.length > 0
-      ? cplValues.reduce((a, b) => a + b, 0) / cplValues.length
-      : 0;
-
-    // Classification counts
-    const classificationCounts = Object.values(MoveClassification).reduce(
-      (acc, cls) => {
-        acc[cls] = playerMoves.filter((m) => m.classification === cls).length;
-        return acc;
-      },
-      {} as Record<MoveClassification, number>
-    );
+    // Aggregates count only the player's moves, never the opponent's.
+    const playerColor = opts.playerColor ?? PlayerColor.WHITE;
+    const summary = summarizePlayerMoves(moveAnalyses, playerColor);
 
     // Phase accuracies
-    const phaseAccuracies = calculatePhaseAccuracies(moveAnalyses, moves);
+    const phaseAccuracies = calculatePhaseAccuracies(moveAnalyses, moves, playerColor);
 
     return {
       gameId,
       engineDepth: opts.depth,
       engineVersion: 'Stockfish 18 WASM',
       moves: moveAnalyses,
-      averageCpl: Math.round(avgCpl),
-      accuracy: Math.round(avgAccuracy * 10) / 10,
+      averageCpl: summary.averageCpl,
+      accuracy: summary.accuracy,
       openingAccuracy: phaseAccuracies.opening,
       middlegameAccuracy: phaseAccuracies.middlegame,
       endgameAccuracy: phaseAccuracies.endgame,
-      classificationCounts,
+      classificationCounts: summary.classificationCounts,
       status: AnalysisStatus.COMPLETED,
       analyzedAt: new Date(),
     };
@@ -225,61 +212,18 @@ export async function analyzeGame(
 }
 
 /**
- * Convert a UCI move to SAN notation given a FEN position.
- */
-function uciToSan(fen: string, uciMove: string): string | null {
-  try {
-    const chess = new Chess(fen);
-    const from = uciMove.substring(0, 2);
-    const to = uciMove.substring(2, 4);
-    const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
-    
-    const move = chess.move({ from, to, promotion });
-    return move?.san ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Convert an array of UCI moves (PV line) to SAN notation.
- */
-function uciPvToSan(startFen: string, uciMoves: string[]): string[] {
-  const chess = new Chess(startFen);
-  const sanMoves: string[] = [];
-
-  for (const uci of uciMoves) {
-    try {
-      const from = uci.substring(0, 2);
-      const to = uci.substring(2, 4);
-      const promotion = uci.length > 4 ? uci[4] : undefined;
-      
-      const move = chess.move({ from, to, promotion });
-      if (move) {
-        sanMoves.push(move.san);
-      } else {
-        break;
-      }
-    } catch {
-      break;
-    }
-  }
-
-  return sanMoves;
-}
-
-/**
  * Calculate accuracy by game phase (opening, middlegame, endgame).
  */
 function calculatePhaseAccuracies(
   analyses: MoveAnalysis[],
-  moves: ParsedMove[]
+  moves: ParsedMove[],
+  playerColor: PlayerColor
 ): { opening: number | null; middlegame: number | null; endgame: number | null } {
   const phases = { opening: [] as number[], middlegame: [] as number[], endgame: [] as number[] };
 
   for (let i = 0; i < analyses.length; i++) {
     const move = moves[i];
-    if (!move) continue;
+    if (!move || analyses[i].color !== playerColor) continue;
     const phase = getGamePhase(move.fenBefore, move.moveNumber);
     phases[phase].push(analyses[i].moveAccuracy);
   }
