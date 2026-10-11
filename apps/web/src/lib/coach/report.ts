@@ -51,8 +51,34 @@ export interface GameClocks {
   baseMs: number | null;
 }
 
+/** A winning position the player reached but did not convert. */
+export interface Conversion {
+  /** Index of the player's move that was played from the peak position. */
+  index: number;
+  /** The position at the peak, with the player to move. */
+  fen: string;
+  /** Winning chances at the peak, 0-100. */
+  peak: number;
+  /** Winning chances after the player's last move, 0-100. */
+  end: number;
+}
+
+/** Mistakes that belong to one skill, with what they cost. */
+export interface SkillCost {
+  skill: SkillKey;
+  /** Sum of winning chances lost, 0-100 per move. */
+  cost: number;
+  count: number;
+  /** The mistakes, costliest first. */
+  examples: { index: number; label: string; headline: string; winDrop: number }[];
+}
+
 export interface GameReport {
   verdict: string;
+  /** Every skill that had at least one mistake, costliest first. */
+  skills: SkillCost[];
+  /** Set when the player was clearly winning (85%+) and ended below 60%. */
+  conversion: Conversion | null;
   /** Null when the game has no clocks or no costly move was played in time trouble. */
   timeTrouble: TimeTrouble | null;
   keyMoments: KeyMoment[];
@@ -77,7 +103,7 @@ const PATTERN_TITLE: Record<Motif, string> = {
 };
 
 /** Skills to train. Several motifs map to the same skill. */
-const SKILLS = {
+export const SKILLS = {
   'blunder-check': {
     title: 'Blunder-check every move',
     drill: 'Before each move, name every piece the move leaves undefended and every capture your opponent gets. Do this out loud in your next 10 games.',
@@ -104,7 +130,9 @@ const SKILLS = {
   },
 } as const;
 
-const SKILL_OF: Record<Motif, keyof typeof SKILLS> = {
+export type SkillKey = keyof typeof SKILLS;
+
+export const SKILL_OF: Record<Motif, SkillKey> = {
   'hanging-piece': 'blunder-check',
   'lost-material': 'blunder-check',
   fork: 'opponent-threats',
@@ -184,6 +212,17 @@ export function buildGameReport(analyses: MoveAnalysis[], playerColor: PlayerCol
     skills.set(key, cur);
   }
 
+  const skillCosts: SkillCost[] = (Object.keys(SKILLS) as SkillKey[])
+    .map((skill) => {
+      const examples = bad
+        .filter((b) => b.explanation.motif && SKILL_OF[b.explanation.motif] === skill)
+        .map((b) => ({ index: b.index, label: label(b.a), headline: b.explanation.headline, winDrop: b.explanation.winDrop }))
+        .sort((x, y) => y.winDrop - x.winDrop);
+      return { skill, cost: examples.reduce((s, e) => s + e.winDrop, 0), count: examples.length, examples };
+    })
+    .filter((s) => s.count > 0)
+    .sort((x, y) => y.cost - x.cost);
+
   const focus: FocusItem[] = [...skills.values()]
     .filter((s) => s.cost >= 5)
     .sort((x, y) => y.cost - x.cost)
@@ -200,10 +239,20 @@ export function buildGameReport(analyses: MoveAnalysis[], playerColor: PlayerCol
     });
 
   // Conversion: was the player clearly winning at some point but did not keep it?
-  const peak = mine.reduce((m, { a }) => Math.max(m, moverEval(a, a.evalBefore, a.mateBefore)), 0);
+  let peak = 0;
+  let peakAt: { a: MoveAnalysis; index: number } | null = null;
+  for (const m of mine) {
+    const v = moverEval(m.a, m.a.evalBefore, m.a.mateBefore);
+    if (v > peak) {
+      peak = v;
+      peakAt = m;
+    }
+  }
   const last = mine.length ? mine[mine.length - 1].a : null;
   const end = last ? moverEval(last, last.evalAfter, last.mateAfter) : 50;
-  if (peak >= 85 && end < 60 && focus.length < 3) {
+  const conversion: Conversion | null =
+    peakAt && peak >= 85 && end < 60 ? { index: peakAt.index, fen: peakAt.a.fenBefore, peak, end } : null;
+  if (conversion && focus.length < 3) {
     focus.push({
       title: 'Convert winning positions',
       why: `You reached a winning position (about ${Math.round(peak)}% winning chances) but did not keep it.`,
@@ -264,7 +313,7 @@ export function buildGameReport(analyses: MoveAnalysis[], playerColor: PlayerCol
     verdict = `${counts.join(' and ')}. The turning point was ${worst.label}, which ${worst.explanation.headline.replace(worst.label + ' ', '')}.`;
   } else verdict = `Only small inaccuracies (${bad.length}). Nothing that changed the result.`;
 
-  return { verdict, timeTrouble, keyMoments, patterns, focus, phases, strengths };
+  return { verdict, skills: skillCosts, conversion, timeTrouble, keyMoments, patterns, focus, phases, strengths };
 }
 
 

@@ -6,6 +6,7 @@ import { usePlayerStore } from "@/stores/player-store";
 import { useShallow } from "zustand/react/shallow";
 import { useAnalysisStore } from "@/stores/analysis-store";
 import { loadCachedAnalysis, saveCachedAnalysis } from "@/lib/analysis/cache";
+import { recordGame } from "@/lib/training/store";
 import ChessBoard from "@/components/chess/ChessBoard";
 import BoardControls from "@/components/chess/BoardControls";
 import MoveList from "@/components/chess/MoveList";
@@ -18,6 +19,12 @@ import ThemeToggle from "@/components/layout/ThemeToggle";
 import { fetchPlayerProfile, fetchAllGames } from "@/lib/api/chess-com";
 import { parseChessComGame } from "@/lib/chess/pgn-parser";
 import type { ParsedGame } from "@/types/chess";
+
+/** The move to open on, from a link like `?move=24`. Defaults to the first move. */
+function startMove(): number {
+  const value = Number(new URLSearchParams(window.location.search).get("move"));
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+}
 
 export default function GameReviewPage() {
   const params = useParams();
@@ -123,7 +130,7 @@ export default function GameReviewPage() {
             setRefining(true);
             setAnalysis(preliminary);
             setMoveAnalyses(preliminary.moves);
-            goToMove(0);
+            goToMove(startMove());
           },
         }));
       if (controller.signal.aborted) return;
@@ -131,7 +138,9 @@ export default function GameReviewPage() {
 
       setAnalysis(results);
       setMoveAnalyses(results.moves);
-      if (!shown) goToMove(0);
+      if (!shown) goToMove(startMove());
+      // Keep what this game teaches for the weakness profile and the mistake deck.
+      void recordGame(currentGame, results);
     } catch (err) {
       if (controller.signal.aborted) return;
       setAnalysisError(

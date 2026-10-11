@@ -12,6 +12,12 @@ Everything runs in your browser: no account, no server, no API keys. Game data c
 - **Clock-aware coaching**: the coach shows how much time you had left on each move and the game report counts the costly mistakes you made in time trouble.
 - **Statistics**: results by colour and time control, and opening analytics split into the openings you choose and the ones you face.
 - **Opening tree**: every line you have reached as White or Black, with games, score and the evaluation after move 10. Openings are named by position, so transpositions get the right name.
+- **Weakness profile**: analyzes your last 50 games in the background (pause and resume any time) and ranks six skills by the winning chances each one costs you per game, with examples that open the move.
+- **Training** (the Train page):
+  - **Mistake deck**: the costly mistakes from your own games as "find a better move" cards, scheduled with spaced repetition.
+  - **Win it again**: winning positions you did not win, played out against Stockfish.
+  - **Visualization**: read a short line without the pieces moving, then answer a question about the final position.
+  - **Guess the move**: play the winner's side of classic games, scored against the move that was played.
 - Dark and light themes; keyboard navigation (`←` `→` `Home` `End`, `F` to flip).
 
 ## How the review works
@@ -39,6 +45,7 @@ apps/web/
     ├── lib/engine/          Explanation rules
     ├── lib/stockfish/       Stockfish worker wrapper and game analyzer
     ├── lib/storage/         IndexedDB database (analysis cache and training data)
+    ├── lib/training/        Weakness profile, mistake deck and the other trainers
     ├── stores/              Zustand stores
     └── types/               Shared types
 ```
@@ -77,4 +84,5 @@ Chess Coach is free software, licensed under the [GNU General Public License v3.
 It includes and builds on:
 
 - **Stockfish 18** via [Stockfish.js](https://github.com/nmrugg/stockfish.js), GPL-3.0. See [`apps/web/public/stockfish/NOTICE.txt`](apps/web/public/stockfish/NOTICE.txt) for the notice and source links.
+- **[ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs)**, MIT, for scheduling the mistake deck.
 - **Opening names** from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings), released into the public domain under CC0.

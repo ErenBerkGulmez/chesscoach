@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useAnalysisStore } from "@/stores/analysis-store";
 import { buildGameReport } from "@/lib/coach/report";
 import { baseTimeMs } from "@/lib/chess/clock";
@@ -87,6 +88,24 @@ export default function GameReportCard({ moves, playerColor }: { moves: MoveAnal
               >
                 {report.timeTrouble.line}
               </button>
+            </div>
+          )}
+
+          {report.conversion && game && (
+            <div className="rounded-lg bg-accent/10 border border-accent/25 p-3 space-y-1.5">
+              <p className="text-sm text-text-primary">
+                You had about {Math.round(report.conversion.peak)}% winning chances at{" "}
+                <button type="button" onClick={() => goToMove(report.conversion!.index)} className="font-semibold underline">
+                  move {moves[report.conversion.index]?.moveNumber}
+                </button>{" "}
+                and did not win.
+              </p>
+              <Link
+                href={`/dashboard/${game.playerUsername}/train?mode=convert&game=${game.id}`}
+                className="inline-block text-sm font-semibold text-accent hover:underline"
+              >
+                Win it again against the engine ▸
+              </Link>
             </div>
           )}
 
