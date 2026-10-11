@@ -36,6 +36,18 @@ const DEFAULT_OPTIONS: Required<EvalOptions> = {
   hash: 64,
 };
 
+/**
+ * Hash size (MB) that is safe for this device. Phones, iOS Safari in
+ * particular, can kill the page when a WASM worker grabs 64MB.
+ */
+export function safeHashMb(): number {
+  if (typeof window === 'undefined') return DEFAULT_OPTIONS.hash;
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const lowMemory = nav.deviceMemory !== undefined && nav.deviceMemory <= 4;
+  const coarse = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+  return lowMemory || coarse ? 16 : DEFAULT_OPTIONS.hash;
+}
+
 type EngineState = 'idle' | 'initializing' | 'ready' | 'evaluating' | 'destroyed';
 
 export class StockfishEngine {
@@ -62,7 +74,7 @@ export class StockfishEngine {
     }
 
     this.state = 'initializing';
-    const opts = { ...DEFAULT_OPTIONS, ...options };
+    const opts = { ...DEFAULT_OPTIONS, hash: safeHashMb(), ...options };
 
     return new Promise<void>((resolve, reject) => {
       try {
