@@ -98,7 +98,7 @@ function calculatePawnShield(chess: Chess, kingSq: Square, color: 'w' | 'b'): nu
   return Math.min(100, Math.round((shieldPawns / 3) * 100));
 }
 
-function getOpenFilesNearSquare(board: any, sq: Square): string[] {
+function getOpenFilesNearSquare(board: ReturnType<Chess["board"]>, sq: Square): string[] {
   const col = sq.charCodeAt(0) - 97;
   const openFiles: string[] = [];
 

@@ -261,7 +261,7 @@ export default function OpeningAnalytics() {
               </h3>
             </div>
             <p className="text-xs font-semibold text-accent mt-0.5 italic">
-              "{activeCategory.question}"
+              &ldquo;{activeCategory.question}&rdquo;
             </p>
           </div>
 
@@ -406,7 +406,7 @@ export default function OpeningAnalytics() {
                         borderRadius: "8px",
                         fontSize: "12px",
                       }}
-                      formatter={(val: any, name: any) => [
+                      formatter={(val: unknown, name: unknown) => [
                         `${val ?? 0} games`,
                         name === "wins"
                           ? "Wins"
@@ -447,7 +447,7 @@ export default function OpeningAnalytics() {
                         borderRadius: "8px",
                         fontSize: "12px",
                       }}
-                      formatter={(val: any) => [`${val ?? 0}%`, "Win Rate"]}
+                      formatter={(val: unknown) => [`${val ?? 0}%`, "Win Rate"]}
                     />
                     <Bar dataKey="winRate" radius={[0, 4, 4, 0]}>
                       {chartData.map((entry, index) => (
@@ -469,7 +469,7 @@ export default function OpeningAnalytics() {
                       innerRadius={50}
                       outerRadius={80}
                       paddingAngle={2}
-                      label={({ name, percent }: any) => `${name} (${Math.round((percent || 0) * 100)}%)`}
+                      label={({ name, percent }: { name?: string; percent?: number }) => `${name} (${Math.round((percent || 0) * 100)}%)`}
                     >
                       {chartData.map((entry, index) => (
                         <Cell

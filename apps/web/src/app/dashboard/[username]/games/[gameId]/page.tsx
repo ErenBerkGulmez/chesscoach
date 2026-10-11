@@ -50,7 +50,9 @@ export default function GameReviewPage() {
 
   const [depth] = useState(16);
   const [isSyncingLocal, setIsSyncingLocal] = useState(false);
-  const [manualSkip, setManualSkip] = useState(false);
+  // Skipping is remembered per game, so opening another game shows its progress again.
+  const [skippedGameId, setSkippedGameId] = useState<string | null>(null);
+  const manualSkip = skippedGameId === gameId;
 
   // Fetch games if missing from local store
   useEffect(() => {
@@ -92,7 +94,6 @@ export default function GameReviewPage() {
     const game = games.find((g) => g.id === gameId);
     if (game) {
       setGame(game);
-      setManualSkip(false);
     }
     return () => {
       clearGame();
@@ -208,7 +209,7 @@ export default function GameReviewPage() {
           <div className="flex items-center justify-between w-full text-xs text-text-muted pt-2 border-t border-border/50">
             <span>Engine: Stockfish 18 (Depth {depth})</span>
             <button
-              onClick={() => setManualSkip(true)}
+              onClick={() => setSkippedGameId(gameId)}
               className="text-accent hover:underline text-xs"
             >
               Skip to review →

@@ -44,10 +44,10 @@ export function buildNlgExplanation(
   const isGood = cls === 'BEST' || cls === 'GREAT' || cls === 'BRILLIANT';
 
   // 1. Headline
-  let headline = getHeadline(cls, played, best);
+  const headline = getHeadline(cls, played, best);
 
   // 2. Summary
-  let summary = `${reasoning.whatChanged} ${reasoning.advantageLost}`;
+  const summary = `${reasoning.whatChanged} ${reasoning.advantageLost}`;
 
   // 3. Body text based on coaching style
   let body = '';

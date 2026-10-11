@@ -1,7 +1,30 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
+
+type Theme = "dark" | "light";
+
+export const THEME_STORAGE_KEY = "chess-coach-theme";
+
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+// The inline script in the root layout sets data-theme before first paint,
+// so the DOM attribute is the source of truth.
+function getTheme(): Theme {
+  return document.documentElement.getAttribute("data-theme") === "light"
+    ? "light"
+    : "dark";
+}
+
+function getServerTheme(): Theme {
+  return "dark";
+}
 
 /**
  * Theme Toggle Component
@@ -10,21 +33,17 @@ import { motion } from "framer-motion";
  * Persists preference to localStorage.
  */
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("chess-coach-theme");
-    if (stored === "light" || stored === "dark") {
-      setTheme(stored);
-      document.documentElement.setAttribute("data-theme", stored);
-    }
-  }, []);
+  const theme = useSyncExternalStore(subscribe, getTheme, getServerTheme);
 
   const toggle = useCallback(() => {
     const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("chess-coach-theme", newTheme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    } catch {
+      // Storage can be unavailable (private mode); the toggle still works for this visit.
+    }
+    listeners.forEach((listener) => listener());
   }, [theme]);
 
   return (
