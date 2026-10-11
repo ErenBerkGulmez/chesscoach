@@ -13,10 +13,13 @@ export const MIN_CARD_WIN_DROP = 10;
 /** The second engine move is also accepted unless it is this much worse than the first. */
 export const CLEARLY_WORSE = 10;
 
+/** 'mistake' cards come from key moments of games, 'opening' cards from repeated opening positions. */
+export type CardKind = 'mistake' | 'opening';
+
 export interface DeckCard {
   /** `${gameId}:${moveIndex}` */
   id: string;
-  kind: 'mistake';
+  kind: CardKind;
   /** Lower-case Chess.com username the card belongs to. */
   username: string;
   gameId: string;
