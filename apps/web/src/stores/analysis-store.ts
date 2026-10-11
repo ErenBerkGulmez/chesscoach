@@ -8,6 +8,7 @@ import type {
 } from '@/types/chess';
 import { ExplanationLevel, PlayerColor } from '@/types/chess';
 import { StockfishEngine, type EvalResult } from '@/lib/stockfish/engine';
+import { bestFromBefore } from '@/lib/analysis/summary';
 import { classifyMove, calculateMoveAccuracy, type ClassificationInput } from '@/lib/chess/move-classifier';
 import { MoveClassification } from '@/types/chess';
 import type { Square } from 'chess.js';
@@ -328,10 +329,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
         bestMoveSan: evalBefore.bestMoveSan,
         bestMoveEval: evalBefore.score,
         bestMoveMate: evalBefore.mate,
-        pvLines: evalAfter.pvLines.map((l) => ({
-          ...l,
-          pvSan: l.pv.map((m) => uciToSan(move.fenBefore, m) || m),
-        })),
+        pvLines: bestFromBefore(move.fenBefore, evalBefore.pvLines).pvLines,
         classification,
         moveAccuracy,
         isCapture: move.isCapture,
