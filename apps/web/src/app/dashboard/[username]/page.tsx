@@ -113,14 +113,14 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="bg-surface border-b border-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/"
               className="text-lg font-bold text-accent hover:text-accent-hover transition-colors"
             >
-              ♞ Chess Coach AI
+              ♞<span className="hidden sm:inline"> Chess Coach</span>
             </Link>
-            <span className="text-text-muted">→</span>
+            <span className="text-text-muted hidden sm:inline">/</span>
             <div className="flex items-center gap-2">
               {profile?.avatar && (
                 <img
@@ -129,7 +129,7 @@ export default function DashboardPage() {
                   className="w-7 h-7 rounded-full"
                 />
               )}
-              <span className="font-semibold text-text-primary">
+              <span className="font-semibold text-text-primary truncate">
                 {profile?.title && (
                   <span className="text-accent mr-1 text-sm font-bold">
                     {profile.title}
@@ -147,9 +147,10 @@ export default function DashboardPage() {
             <button
               onClick={syncPlayer}
               disabled={isSyncing}
-              className="px-3 py-1.5 text-sm rounded-lg border border-border hover:bg-surface-hover transition-colors disabled:opacity-50"
+              aria-label="Refresh games"
+              className="px-3 py-1.5 text-sm rounded-lg border border-border hover:bg-surface-hover transition-colors disabled:opacity-50 whitespace-nowrap"
             >
-              {isSyncing ? "Syncing..." : "↻ Refresh"}
+              {isSyncing ? "Syncing..." : <>↻<span className="hidden sm:inline"> Refresh</span></>}
             </button>
             <ThemeToggle />
           </div>

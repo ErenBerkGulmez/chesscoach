@@ -44,8 +44,8 @@ export default function EngineLines() {
     return (
       <div className="glass-card p-4">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-bold text-text-primary uppercase tracking-wider">
-            Engine Lines
+          <span className="text-xs font-semibold text-text-muted">
+            Engine lines
           </span>
         </div>
         <p className="text-xs text-text-muted text-center py-4">
@@ -58,8 +58,8 @@ export default function EngineLines() {
   return (
     <div className="glass-card p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-text-primary uppercase tracking-wider">
-          Engine Lines
+        <span className="text-xs font-semibold text-text-muted">
+          Engine lines
         </span>
         <span className="text-[10px] text-text-muted font-mono">
           depth {currentAnalysis.pvLines[0]?.depth ?? "?"}

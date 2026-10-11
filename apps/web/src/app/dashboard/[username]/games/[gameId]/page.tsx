@@ -4,22 +4,15 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAnalysisStore } from "@/stores/analysis-store";
-import { analyzeGame, DEFAULT_ANALYZER_OPTIONS } from "@/lib/stockfish/analyzer";
+import { analyzeGame } from "@/lib/stockfish/analyzer";
 import { loadCachedAnalysis, saveCachedAnalysis } from "@/lib/analysis/cache";
-import { summarizePlayerMoves } from "@/lib/analysis/summary";
-import {
-  CLASSIFICATION_CONFIG,
-  MoveClassification,
-} from "@/types/chess";
 import ChessBoard from "@/components/chess/ChessBoard";
 import BoardControls from "@/components/chess/BoardControls";
 import MoveList from "@/components/chess/MoveList";
-import EvalGraph from "@/components/chess/EvalGraph";
 import EngineLines from "@/components/chess/EngineLines";
 import AICoachPanel from "@/components/analysis/AICoachPanel";
-import PositionMeters from "@/components/analysis/PositionMeters";
+import GameSummary from "@/components/analysis/GameSummary";
 import ThemeToggle from "@/components/layout/ThemeToggle";
-import { motion } from "framer-motion";
 
 import { fetchPlayerProfile, fetchAllGames } from "@/lib/api/chess-com";
 import { parseChessComGame } from "@/lib/chess/pgn-parser";
@@ -164,7 +157,7 @@ export default function GameReviewPage() {
   // Loading state
   if (!currentGame) {
     return (
-      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center gap-4 overflow-hidden">
+      <div className="min-h-dvh bg-background flex flex-col items-center justify-center gap-4">
         <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
         <p className="text-sm text-text-muted">
           {isSyncingLocal
@@ -184,249 +177,115 @@ export default function GameReviewPage() {
     );
 
     return (
-      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        {/* Glow background */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
-
-        {/* Progress card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass-card max-w-md w-full p-8 text-center flex flex-col items-center gap-6 relative z-10 border border-border/80 shadow-2xl"
-        >
-          {/* Logo icon */}
-          <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center relative">
-            <span className="text-3xl animate-pulse">♞</span>
-            <div className="absolute -inset-1 border border-accent/30 rounded-2xl animate-ping opacity-25" />
-          </div>
-
-          {/* Title */}
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
+        <div className="glass-card max-w-sm w-full p-6 flex flex-col gap-4">
           <div>
-            <h1 className="text-lg font-bold text-text-primary">
-              Analyzing Game
-            </h1>
-            <p className="text-xs text-text-muted mt-1">
-              vs <span className="text-text-secondary font-semibold">{currentGame.opponentUsername}</span> ({currentGame.opponentRating})
-            </p>
-            <p className="text-[11px] text-accent mt-0.5 font-medium">
-              {currentGame.openingName || "Standard Opening"}
+            <h1 className="text-base font-semibold text-text-primary">Analyzing game</h1>
+            <p className="text-sm text-text-muted mt-0.5 truncate">
+              vs {currentGame.opponentUsername} ({currentGame.opponentRating})
+              {currentGame.openingName ? ` · ${currentGame.openingName}` : ""}
             </p>
           </div>
 
-          {/* Progress bar */}
-          <div className="w-full space-y-2">
-            <div className="flex justify-between text-xs text-text-secondary font-mono">
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs text-text-secondary tabular-nums">
               <span>Evaluating move {currentMoveNum}/{totalMoves}</span>
-              <span className="font-bold text-accent">{analysisProgress}%</span>
+              <span className="font-semibold text-accent">{analysisProgress}%</span>
             </div>
-            <div className="h-2.5 bg-surface border border-border rounded-full overflow-hidden p-0.5">
-              <motion.div
-                className="h-full bg-gradient-to-r from-accent to-emerald-400 rounded-full"
-                style={{ width: `${Math.max(5, analysisProgress)}%` }}
-                transition={{ duration: 0.3 }}
+            <div
+              className="h-2 bg-background rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuenow={analysisProgress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full bg-accent rounded-full transition-[width] duration-300"
+                style={{ width: `${Math.max(3, analysisProgress)}%` }}
               />
             </div>
           </div>
 
-          {/* Footer note & skip */}
-          <div className="flex items-center justify-between w-full text-xs text-text-muted pt-2 border-t border-border/50">
-            <span>Stockfish 18, depth {DEFAULT_ANALYZER_OPTIONS.depth}-{DEFAULT_ANALYZER_OPTIONS.refineDepth}</span>
-            <button
-              onClick={() => setSkippedGameId(gameId)}
-              className="text-accent hover:underline text-xs"
-            >
-              Skip to review →
-            </button>
-          </div>
-
-          {/* Error */}
           {analysisError && (
-            <p className="text-xs text-blunder bg-blunder/10 p-2 rounded w-full">
-              {analysisError}
-            </p>
+            <p className="text-xs text-blunder bg-blunder/10 p-2 rounded">{analysisError}</p>
           )}
-        </motion.div>
+
+          <button
+            onClick={() => setSkippedGameId(gameId)}
+            className="self-end text-sm text-accent hover:underline"
+          >
+            Skip to the board
+          </button>
+        </div>
       </div>
     );
   }
 
-  const analyzedMoves = Object.values(moveAnalyses);
-  const liveSummary = summarizePlayerMoves(analyzedMoves, currentGame.playerColor);
-  const dynamicAccuracy = liveSummary.accuracy;
-  const dynamicClassifications = liveSummary.classificationCounts;
+  const resultLabel =
+    currentGame.result === "WIN" ? "Won" : currentGame.result === "LOSS" ? "Lost" : "Draw";
+  const resultClass =
+    currentGame.result === "WIN"
+      ? "bg-accent/15 text-accent"
+      : currentGame.result === "LOSS"
+        ? "bg-blunder/15 text-blunder"
+        : "bg-surface-hover text-text-secondary";
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col bg-background text-text-primary">
-      {/* Header */}
-      <header className="bg-surface border-b border-border shrink-0 z-40">
-        <div className="max-w-[1400px] mx-auto px-4 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push(`/dashboard/${username}`)}
-              className="text-text-secondary hover:text-accent transition-colors flex items-center gap-1.5 text-sm"
-            >
-              ← Dashboard
-            </button>
-            <span className="text-text-muted">|</span>
-            <div>
-              <h1 className="text-sm font-bold truncate max-w-[200px] sm:max-w-none">
-                vs {currentGame.opponentUsername} (
-                {currentGame.opponentRating})
-              </h1>
-              <p className="text-[10px] text-text-muted">
-                {currentGame.openingName || "Custom Opening"} •{" "}
-                {currentGame.timeControl} •{" "}
-                {currentGame.result}
-              </p>
-            </div>
+    <div className="min-h-screen lg:h-dvh lg:overflow-hidden flex flex-col bg-background text-text-primary">
+      <header className="bg-surface border-b border-border shrink-0">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-4 h-14 flex items-center gap-3">
+          <button
+            onClick={() => router.push(`/dashboard/${username}`)}
+            aria-label="Back to games"
+            className="w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-text-secondary hover:text-accent hover:bg-surface-hover transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-sm sm:text-base font-semibold truncate">
+              vs {currentGame.opponentUsername}{" "}
+              <span className="text-text-muted font-normal">({currentGame.opponentRating})</span>
+            </h1>
+            <p className="text-xs text-text-muted truncate">
+              {currentGame.openingName || "Unknown opening"}
+            </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleStartAnalysis(true)}
-              disabled={isAnalyzing}
-              className="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border text-text-secondary font-medium text-xs rounded-lg transition-colors disabled:opacity-50"
-            >
-              {refining ? "Checking key moves..." : isAnalyzing ? "Analyzing..." : "↻ Re-Analyze"}
-            </button>
-            <ThemeToggle />
-          </div>
+          <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${resultClass}`}>
+            {resultLabel}
+          </span>
+          {refining && (
+            <span className="hidden sm:inline text-xs text-text-muted">Checking key moves...</span>
+          )}
+          <ThemeToggle />
         </div>
       </header>
 
-      {/* Main Review Layout */}
-      <div className="flex-1 max-w-[1400px] w-full mx-auto p-2 sm:p-4 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:overflow-hidden">
-        {/* Board Section */}
-        <div className="lg:flex-1 flex flex-col items-center justify-between lg:overflow-hidden min-w-0 w-full">
-          <div className="lg:flex-1 flex items-center justify-center w-full max-w-[min(100%,70vh)] lg:max-w-none min-h-0">
+      <main className="flex-1 max-w-[1400px] w-full mx-auto p-2 sm:p-4 flex flex-col lg:flex-row gap-3 lg:gap-5 lg:min-h-0">
+        {/* Board column: sized by height on desktop so it never overflows */}
+        <div className="flex flex-col items-center gap-2 lg:flex-1 lg:min-h-0 lg:justify-center">
+          <div className="w-full lg:w-[min(100%,calc(100dvh-9.5rem))]">
             <ChessBoard />
           </div>
+          <div className="w-full lg:w-[min(100%,calc(100dvh-9.5rem))]">
+            <BoardControls />
+          </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-full lg:w-[450px] flex flex-col shrink-0 lg:h-full lg:overflow-hidden gap-3 min-w-0">
-          {/* Coach & Position Meters Panel */}
-          <div className="lg:max-h-[45%] lg:overflow-y-auto shrink-0 space-y-3 lg:pr-1">
-            {currentGame && <AICoachPanel />}
-            <PositionMeters />
-            <EngineLines />
-          </div>
-
-          {/* Move List & Performance Stats */}
-          <div className="lg:flex-1 min-h-0 lg:overflow-y-auto lg:pr-1 space-y-3">
-            {/* Move List Card */}
-            <div className="glass-card p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between border-b border-border pb-2">
-                <h2 className="text-xs font-bold text-text-primary uppercase tracking-wider">
-                  Move List
-                </h2>
-              </div>
+        {/* Sidebar */}
+        <div className="w-full lg:w-[420px] shrink-0 flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1 pb-4">
+          <AICoachPanel />
+          {gameAnalysis && <GameSummary analysis={gameAnalysis} />}
+          <EngineLines />
+          <section className="glass-card p-3">
+            <h2 className="text-xs font-semibold text-text-muted px-1 pb-2">Moves</h2>
+            <div data-move-scroll className="relative max-h-72 overflow-y-auto">
               <MoveList moves={currentGame.moves} />
             </div>
-
-            {/* Performance Stats Card */}
-            {(gameAnalysis || analyzedMoves.length > 0) && (
-              <div className="glass-card p-4 flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-border pb-2">
-                  <h2 className="text-xs font-bold text-text-primary uppercase tracking-wider">
-                    {gameAnalysis
-                      ? "Game Performance"
-                      : "Live Performance"}
-                  </h2>
-                  <span className="text-accent text-sm font-bold">
-                    {gameAnalysis
-                      ? gameAnalysis.accuracy
-                      : dynamicAccuracy}
-                    % Accuracy
-                  </span>
-                </div>
-
-                {/* Phase Accuracy */}
-                {gameAnalysis && (
-                  <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-                    <div className="bg-surface p-2 rounded">
-                      <p className="text-text-muted">Opening</p>
-                      <p className="text-sm font-bold mt-0.5 text-text-secondary">
-                        {gameAnalysis.openingAccuracy !== null
-                          ? `${gameAnalysis.openingAccuracy}%`
-                          : "—"}
-                      </p>
-                    </div>
-                    <div className="bg-surface p-2 rounded">
-                      <p className="text-text-muted">Middlegame</p>
-                      <p className="text-sm font-bold mt-0.5 text-text-secondary">
-                        {gameAnalysis.middlegameAccuracy !== null
-                          ? `${gameAnalysis.middlegameAccuracy}%`
-                          : "—"}
-                      </p>
-                    </div>
-                    <div className="bg-surface p-2 rounded">
-                      <p className="text-text-muted">Endgame</p>
-                      <p className="text-sm font-bold mt-0.5 text-text-secondary">
-                        {gameAnalysis.endgameAccuracy !== null
-                          ? `${gameAnalysis.endgameAccuracy}%`
-                          : "—"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Classification Counts */}
-                <div className="space-y-1.5">
-                  {(
-                    [
-                      MoveClassification.BRILLIANT,
-                      MoveClassification.GREAT,
-                      MoveClassification.BEST,
-                      MoveClassification.EXCELLENT,
-                      MoveClassification.GOOD,
-                      MoveClassification.INACCURACY,
-                      MoveClassification.MISTAKE,
-                      MoveClassification.BLUNDER,
-                      MoveClassification.MISSED_WIN,
-                      MoveClassification.MISSED_MATE,
-                    ] as const
-                  ).map((key) => {
-                    const count = gameAnalysis
-                      ? gameAnalysis.classificationCounts[key] || 0
-                      : dynamicClassifications[key] || 0;
-                    const config = CLASSIFICATION_CONFIG[key];
-                    if (!config || count === 0) return null;
-
-                    return (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between text-xs px-2 py-1 rounded hover:bg-surface transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="font-bold w-4 text-center font-mono"
-                            style={{ color: config.color }}
-                          >
-                            {config.symbol}
-                          </span>
-                          <span className="text-text-secondary">
-                            {config.label}
-                          </span>
-                        </div>
-                        <span className="font-semibold text-text-primary">
-                          {count}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Controls & Graph */}
-          <div className="shrink-0 space-y-3 pt-1 border-t border-border/50 bg-background">
-            <BoardControls />
-            <EvalGraph />
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

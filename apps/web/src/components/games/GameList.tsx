@@ -73,7 +73,7 @@ export default function GameList({ games, username }: GameListProps) {
             onClick={() =>
               router.push(`/dashboard/${username}/games/${game.id}`)
             }
-            className="w-full grid grid-cols-1 sm:grid-cols-[1fr_80px_140px_100px_80px] gap-2 sm:gap-3 items-center px-4 py-3 rounded-lg bg-surface hover:bg-surface-hover border border-transparent hover:border-border transition-all text-left group"
+            className="w-full grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_80px_140px_100px_80px] gap-x-3 gap-y-1 items-center px-4 py-3 rounded-lg bg-surface hover:bg-surface-hover border border-transparent hover:border-border transition-all text-left group"
           >
             {/* Opponent */}
             <div className="flex items-center gap-3 min-w-0">
@@ -93,7 +93,7 @@ export default function GameList({ games, username }: GameListProps) {
             </div>
 
             {/* Result */}
-            <div className="flex sm:justify-center">
+            <div className="flex justify-end sm:justify-center">
               <span
                 className={`text-xs font-bold px-2.5 py-1 rounded ${result.bg} ${result.text}`}
               >
@@ -109,14 +109,14 @@ export default function GameList({ games, username }: GameListProps) {
             </div>
 
             {/* Time control */}
-            <div className="sm:text-center">
+            <div className="hidden sm:block sm:text-center">
               <span className="text-xs text-text-muted">
                 {timeIcon} {game.timeControl}
               </span>
             </div>
 
             {/* Date */}
-            <div className="sm:text-right">
+            <div className="text-right">
               <p className="text-xs text-text-muted">
                 {format(game.playedAt, "MMM d")}
               </p>

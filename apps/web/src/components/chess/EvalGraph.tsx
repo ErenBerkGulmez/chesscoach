@@ -81,25 +81,14 @@ export default function EvalGraph() {
   }, [points]);
 
   if (moves.length === 0) {
-    return (
-      <div className="eval-graph flex items-center justify-center text-xs text-text-muted">
-        No evaluation data available.
-      </div>
-    );
+    return null;
   }
 
   const activeX = currentMoveIndex >= 0 ? (currentMoveIndex / (moves.length - 1)) * width : 0;
 
   return (
-    <div className="glass-card p-3 flex flex-col gap-2">
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-semibold text-text-secondary">Evaluation & Threat Timeline</span>
-        <span className="text-text-muted font-mono text-[10px]">
-          {Object.keys(moveAnalyses).length} of {moves.length} analyzed
-        </span>
-      </div>
-
-      <div className="relative h-20 w-full overflow-hidden bg-background/50 rounded border border-border/50">
+    <div>
+      <div className="relative h-16 w-full overflow-hidden bg-background/50 rounded-md">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="w-full h-full"
