@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAnalysisStore } from "@/stores/analysis-store";
 import { analyzeGame } from "@/lib/stockfish/analyzer";
+import { summarizePlayerMoves } from "@/lib/analysis/summary";
 import {
   CLASSIFICATION_CONFIG,
   MoveClassification,
@@ -113,6 +114,7 @@ export default function GameReviewPage() {
         depth,
         multiPv: 3,
         threads: 2,
+        playerColor: currentGame.playerColor,
         onProgress: (moveIndex, totalMoves) => {
           const progress = Math.round((moveIndex / totalMoves) * 100);
           setAnalysisProgress(progress);
@@ -228,20 +230,9 @@ export default function GameReviewPage() {
   }
 
   const analyzedMoves = Object.values(moveAnalyses);
-  const dynamicAccuracy =
-    analyzedMoves.length > 0
-      ? Math.round(
-          (analyzedMoves.reduce((acc, m) => acc + m.moveAccuracy, 0) /
-            analyzedMoves.length) *
-            10
-        ) / 10
-      : 0;
-
-  const dynamicClassifications = {} as Record<MoveClassification, number>;
-  analyzedMoves.forEach((m) => {
-    dynamicClassifications[m.classification] =
-      (dynamicClassifications[m.classification] || 0) + 1;
-  });
+  const liveSummary = summarizePlayerMoves(analyzedMoves, currentGame.playerColor);
+  const dynamicAccuracy = liveSummary.accuracy;
+  const dynamicClassifications = liveSummary.classificationCounts;
 
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-background text-text-primary">
