@@ -20,7 +20,7 @@ import { CONVERT_MOVES, judgeAfterReply, judgeConversion, winAfterMove } from ".
 import { acceptedAnswers, cardsFromGame, deckStats, dueCards, isCorrect, reviewCard } from "./deck";
 import { loadCards, loadSummaries, loadSummary, recordGame, saveCard, saveSummary } from "./store";
 import { buildProfile, openConversions, reportForGame, summarizeGame, type GameSummary } from "./summary";
-import { MAX_LINE, gradeAnswer, makeExercise, seeded } from "./visualize";
+import { MAX_LINE, gradeAnswer, makeExercise, plainMove, seeded } from "./visualize";
 
 // 1.e4 e5 2.Nf3 Nc6 3.Bc4 Nd4 4.Nxe5 Qg5 5.Nxf7 Qxg2 6.Rf1 Qxe4+ 7.Be2 Nf3#
 const PGN = "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nd4 4. Nxe5 Qg5 5. Nxf7 Qxg2 6. Rf1 Qxe4+ 7. Be2 Nf3#";
@@ -386,9 +386,35 @@ describe("visualization", () => {
   it("uses at most six half-moves and formats the line", () => {
     const ex = makeExercise(start, sans, 1)!;
     expect(ex.line).toHaveLength(MAX_LINE);
-    expect(ex.text).toBe("1.e4 d5 2.exd5 Qxd5 3.Nc3 Qa5");
+    expect(ex.text).toBe("1.e2-e4 d7-d5 2.e4-d5 Qd8-d5 3.Nb1-c3 Qd5-a5");
     expect(ex.turn).toBe("w");
     expect(new Chess(ex.finalFen).get("a5")).toMatchObject({ type: "q", color: "b" });
+  });
+
+  it("never shows capture, check or mate marks in the line", () => {
+    const afterE4 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
+    const mate = makeExercise(afterE4, ["e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"], 1)!;
+    expect(mate.text).toBe("1...e7-e5 2.Qd1-h5 Nb8-c6 3.Bf1-c4 Ng8-f6 4.Qh5-f7");
+    for (let seed = 0; seed < 20; seed++) {
+      expect(makeExercise(start, sans, seed)!.text).not.toMatch(/[x+#]/);
+    }
+  });
+
+  it("writes castling and promotion without marks", () => {
+    expect(plainMove({ san: "O-O+", piece: "k", from: "e1", to: "g1" })).toBe("O-O");
+    expect(plainMove({ san: "bxa8=Q+", piece: "p", from: "b7", to: "a8", promotion: "q" })).toBe("b7-a8=Q");
+    expect(plainMove({ san: "Nxe5", piece: "n", from: "f3", to: "e5" })).toBe("Nf3-e5");
+  });
+
+  it("asks whether the piece that moved last is defended", () => {
+    // 3...Qa5: the queen on a5 has no defender. 3.Nc3: the knight is defended by the b- and d-pawns.
+    const queen = makeExercise(start, sans, 1, "defended")!.question;
+    expect(queen.prompt).toBe("At the end, is the black queen on a5 defended by another Black piece?");
+    expect(queen.answer).toBe("No");
+    const knight = makeExercise(start, sans.slice(0, 5), 1, "defended")!.question;
+    expect(knight.prompt).toContain("white knight on c3");
+    expect(knight.answer).toBe("Yes");
+    expect(knight.explain).toBe("It is defended 2 times.");
   });
 
   it("is reproducible from its seed", () => {

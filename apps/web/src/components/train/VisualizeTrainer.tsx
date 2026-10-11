@@ -95,7 +95,7 @@ export default function VisualizeTrainer({ cards, seed }: { cards: DeckCard[]; s
           <div className="space-y-1">
             <p className="text-sm text-text-secondary">
               {exercise.turn === "w" ? "White" : "Black"} to move. Play this line in your head, without moving the
-              pieces:
+              pieces. Each move is written as from-to, with no capture or check marks:
             </p>
             <p className="text-lg font-mono font-semibold text-text-primary leading-snug">{exercise.text}</p>
             <p className="text-xs text-text-muted">{from}</p>
