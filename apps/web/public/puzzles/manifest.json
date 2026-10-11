@@ -1,0 +1,26 @@
+{
+  "blunder-check": {
+    "count": 5004,
+    "bytes": 179611
+  },
+  "opponent-threats": {
+    "count": 5004,
+    "bytes": 178415
+  },
+  "own-tactics": {
+    "count": 5004,
+    "bytes": 175999
+  },
+  "king-safety": {
+    "count": 5004,
+    "bytes": 182121
+  },
+  "endgame": {
+    "count": 5004,
+    "bytes": 146542
+  },
+  "plans": {
+    "count": 5004,
+    "bytes": 171768
+  }
+}
