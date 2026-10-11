@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { motion } from "framer-motion";
 import { usePlayerStore } from "@/stores/player-store";
+import { useShallow } from "zustand/react/shallow";
 import {
   fetchPlayerProfile,
   fetchAllGames,
@@ -13,29 +13,22 @@ import { parseChessComGame } from "@/lib/chess/pgn-parser";
 import type { ParsedGame } from "@/types/chess";
 import GameList from "@/components/games/GameList";
 import GameFilters from "@/components/games/GameFilters";
-import StatsOverview from "@/components/dashboard/StatsOverview";
+import dynamic from "next/dynamic";
+
+// The statistics tab pulls in charting code; load it only when opened.
+const StatsOverview = dynamic(() => import("@/components/dashboard/StatsOverview"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-text-muted py-8 text-center">Loading statistics...</p>,
+});
 import ThemeToggle from "@/components/layout/ThemeToggle";
 
 export default function DashboardPage() {
   const params = useParams();
   const username = params.username as string;
 
-  const {
-    profile,
-    games,
-    filteredGames,
-    isSyncing,
-    syncProgress,
-    syncError,
-    filters,
-    searchQuery,
-    setUsername,
-    setProfile,
-    setGames,
-    setIsSyncing,
-    setSyncProgress,
-    setSyncError,
-  } = usePlayerStore();
+  const { profile, games, filteredGames, isSyncing, syncProgress, syncError, filters, searchQuery, setUsername, setProfile, setGames, setIsSyncing, setSyncProgress, setSyncError } = usePlayerStore(
+    useShallow((s) => ({ profile: s.profile, games: s.games, filteredGames: s.filteredGames, isSyncing: s.isSyncing, syncProgress: s.syncProgress, syncError: s.syncError, filters: s.filters, searchQuery: s.searchQuery, setUsername: s.setUsername, setProfile: s.setProfile, setGames: s.setGames, setIsSyncing: s.setIsSyncing, setSyncProgress: s.setSyncProgress, setSyncError: s.setSyncError }))
+  );
 
   const [activeTab, setActiveTab] = useState<"games" | "stats">(
     "games"
@@ -236,8 +229,7 @@ export default function DashboardPage() {
                   </span>
                 )}
                 {activeTab === tab.key && (
-                  <motion.div
-                    layoutId="tab-indicator"
+                  <div
                     className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
                   />
                 )}
@@ -250,11 +242,8 @@ export default function DashboardPage() {
       {/* Content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full">
         {activeTab === "games" && (
-          <motion.div
+          <div
             key="games"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
             className="space-y-4"
           >
             <GameFilters />
@@ -271,18 +260,15 @@ export default function DashboardPage() {
                 username={username}
               />
             )}
-          </motion.div>
+          </div>
         )}
 
         {activeTab === "stats" && (
-          <motion.div
+          <div
             key="stats"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
           >
             <StatsOverview />
-          </motion.div>
+          </div>
         )}
       </main>
     </div>

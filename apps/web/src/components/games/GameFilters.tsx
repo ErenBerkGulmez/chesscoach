@@ -1,8 +1,8 @@
 "use client";
 
 import { usePlayerStore } from "@/stores/player-store";
+import { useShallow } from "zustand/react/shallow";
 import { TimeClass, GameResult, PlayerColor } from "@/types/chess";
-import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 /**
@@ -16,19 +16,9 @@ import { useState } from "react";
  * - Sort options
  */
 export default function GameFilters() {
-  const {
-    filters,
-    searchQuery,
-    sortBy,
-    sortOrder,
-    games,
-    filteredGames,
-    setFilters,
-    clearFilters,
-    setSearchQuery,
-    setSortBy,
-    toggleSortOrder,
-  } = usePlayerStore();
+  const { filters, searchQuery, sortBy, sortOrder, games, filteredGames, setFilters, clearFilters, setSearchQuery, setSortBy, toggleSortOrder } = usePlayerStore(
+    useShallow((s) => ({ filters: s.filters, searchQuery: s.searchQuery, sortBy: s.sortBy, sortOrder: s.sortOrder, games: s.games, filteredGames: s.filteredGames, setFilters: s.setFilters, clearFilters: s.clearFilters, setSearchQuery: s.setSearchQuery, setSortBy: s.setSortBy, toggleSortOrder: s.toggleSortOrder }))
+  );
 
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -105,13 +95,8 @@ export default function GameFilters() {
       </div>
 
       {/* Expandable filter panel */}
-      <AnimatePresence>
         {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+          <div
             className="overflow-hidden"
           >
             <div className="glass-card p-4 space-y-4">
@@ -191,9 +176,8 @@ export default function GameFilters() {
                 </button>
               )}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
 
       {/* Results count */}
       <div className="flex items-center justify-between text-xs text-text-muted">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAnalysisStore } from "@/stores/analysis-store";
+import { useShallow } from "zustand/react/shallow";
 import { CLASSIFICATION_CONFIG, MoveClassification, PlayerColor } from "@/types/chess";
 import type { ParsedMove, MoveAnalysis } from "@/types/chess";
 import { useRef, useEffect } from "react";
@@ -17,7 +18,9 @@ interface MoveListProps {
 }
 
 export default function MoveList({ moves }: MoveListProps) {
-  const { currentMoveIndex, moveAnalyses, goToMove } = useAnalysisStore();
+  const { currentMoveIndex, moveAnalyses, goToMove } = useAnalysisStore(
+    useShallow((s) => ({ currentMoveIndex: s.currentMoveIndex, moveAnalyses: s.moveAnalyses, goToMove: s.goToMove }))
+  );
 
   // Group moves into pairs (white + black)
   const movePairs: Array<{

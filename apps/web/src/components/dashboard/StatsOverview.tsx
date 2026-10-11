@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { usePlayerStore } from "@/stores/player-store";
+import { useShallow } from "zustand/react/shallow";
 import { GameResult, TimeClass, PlayerColor } from "@/types/chess";
 import type { ParsedGame } from "@/types/chess";
 import { motion } from "framer-motion";
@@ -15,7 +16,9 @@ import OpeningAnalytics from "./OpeningAnalytics";
  * - Four-Category Independent Opening Analytics Dashboard
  */
 export default function StatsOverview() {
-  const { games } = usePlayerStore();
+  const { games } = usePlayerStore(
+    useShallow((s) => ({ games: s.games }))
+  );
 
   const stats = useMemo(() => computeStats(games), [games]);
 

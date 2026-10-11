@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { usePlayerStore } from "@/stores/player-store";
+import { useShallow } from "zustand/react/shallow";
 import { useAnalysisStore } from "@/stores/analysis-store";
-import { analyzeGame } from "@/lib/stockfish/analyzer";
 import { loadCachedAnalysis, saveCachedAnalysis } from "@/lib/analysis/cache";
 import ChessBoard from "@/components/chess/ChessBoard";
 import BoardControls from "@/components/chess/BoardControls";
@@ -25,31 +25,18 @@ export default function GameReviewPage() {
   const username = params.username as string;
   const gameId = params.gameId as string;
 
-  const { games, setUsername, setProfile, setGames } = usePlayerStore();
+  const { games, setUsername, setProfile, setGames } = usePlayerStore(
+    useShallow((s) => ({ games: s.games, setUsername: s.setUsername, setProfile: s.setProfile, setGames: s.setGames }))
+  );
 
-  const {
-    currentGame,
-    gameAnalysis,
-    moveAnalyses,
-    isAnalyzing,
-    analysisProgress,
-    analysisError,
-    setGame,
-    setAnalysis,
-    setMoveAnalyses,
-    setIsAnalyzing,
-    setAnalysisProgress,
-    setAnalysisError,
-    clearGame,
-    goToMove,
-  } = useAnalysisStore();
+  const { currentGame, gameAnalysis, moveAnalyses, isAnalyzing, analysisProgress, analysisError, setGame, setAnalysis, setMoveAnalyses, setIsAnalyzing, setAnalysisProgress, setAnalysisError, clearGame, goToMove } = useAnalysisStore(
+    useShallow((s) => ({ currentGame: s.currentGame, gameAnalysis: s.gameAnalysis, moveAnalyses: s.moveAnalyses, isAnalyzing: s.isAnalyzing, analysisProgress: s.analysisProgress, analysisError: s.analysisError, setGame: s.setGame, setAnalysis: s.setAnalysis, setMoveAnalyses: s.setMoveAnalyses, setIsAnalyzing: s.setIsAnalyzing, setAnalysisProgress: s.setAnalysisProgress, setAnalysisError: s.setAnalysisError, clearGame: s.clearGame, goToMove: s.goToMove }))
+  );
 
   const [isSyncingLocal, setIsSyncingLocal] = useState(false);
   const [refining, setRefining] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Stop the engine workers when leaving the page.
-  useEffect(() => () => abortRef.current?.abort(), []);
   // Skipping is remembered per game, so opening another game shows its progress again.
   const [skippedGameId, setSkippedGameId] = useState<string | null>(null);
   const manualSkip = skippedGameId === gameId;
@@ -89,16 +76,23 @@ export default function GameReviewPage() {
     loadGameIfMissing();
   }, [username, games.length, setUsername, setProfile, setGames]);
 
-  // Set active game
+  // Set active game. The games list is refreshed in the background, so only
+  // load the game when it is not already the active one; otherwise a refresh
+  // would throw away the finished analysis and start it again.
   useEffect(() => {
     const game = games.find((g) => g.id === gameId);
-    if (game) {
+    if (game && useAnalysisStore.getState().currentGame?.id !== game.id) {
       setGame(game);
     }
+  }, [gameId, games, setGame]);
+
+  // Leaving the game stops its analysis and clears it.
+  useEffect(() => {
     return () => {
+      abortRef.current?.abort();
       clearGame();
     };
-  }, [gameId, games, setGame, clearGame]);
+  }, [gameId, clearGame]);
 
   // Full-game analysis. A cached result is used unless `fresh` is set.
   const handleStartAnalysis = useCallback(async (fresh = false) => {
@@ -116,7 +110,7 @@ export default function GameReviewPage() {
       let shown = false;
       const results =
         cached ??
-        (await analyzeGame(currentGame.moves, currentGame.id, {
+        (await (await import("@/lib/stockfish/analyzer")).analyzeGame(currentGame.moves, currentGame.id, {
           playerColor: currentGame.playerColor,
           signal: controller.signal,
           onProgress: (done, total) => {
@@ -132,6 +126,7 @@ export default function GameReviewPage() {
             goToMove(0);
           },
         }));
+      if (controller.signal.aborted) return;
       if (!cached) void saveCachedAnalysis(results);
 
       setAnalysis(results);
@@ -143,8 +138,11 @@ export default function GameReviewPage() {
         err instanceof Error ? err.message : "Failed to run position analysis"
       );
     } finally {
-      setIsAnalyzing(false);
-      setRefining(false);
+      // A newer run owns these flags once this one has been replaced.
+      if (abortRef.current === controller) {
+        setIsAnalyzing(false);
+        setRefining(false);
+      }
     }
   }, [currentGame, isAnalyzing, setIsAnalyzing, setAnalysisError, setAnalysisProgress, setAnalysis, setMoveAnalyses, goToMove]);
 
@@ -276,9 +274,6 @@ export default function GameReviewPage() {
 
         {/* Sidebar */}
         <div className="w-full lg:w-[420px] shrink-0 flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1 pb-4">
-          {gameAnalysis && (
-            <GameReportCard moves={gameAnalysis.moves} playerColor={currentGame.playerColor} />
-          )}
           <CoachPanel />
           {gameAnalysis && <GameSummary analysis={gameAnalysis} />}
           <EngineLines />
@@ -288,6 +283,9 @@ export default function GameReviewPage() {
               <MoveList moves={currentGame.moves} />
             </div>
           </section>
+          {gameAnalysis && (
+            <GameReportCard moves={gameAnalysis.moves} playerColor={currentGame.playerColor} />
+          )}
         </div>
       </main>
     </div>

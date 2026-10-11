@@ -3,6 +3,7 @@
 import { useMemo, useEffect } from "react";
 import { Chessboard } from "react-chessboard";
 import { useAnalysisStore } from "@/stores/analysis-store";
+import { useShallow } from "zustand/react/shallow";
 import { evalToBarPercentage, formatEval } from "@/lib/stockfish/engine";
 import { CLASSIFICATION_CONFIG } from "@/types/chess";
 import type { Square } from "chess.js";
@@ -14,25 +15,9 @@ const STARTING_FEN =
  * Interactive Chess Board with Evaluation Bar & Custom Move Exploration
  */
 export default function ChessBoard() {
-  const {
-    currentMoveIndex,
-    isFlipped,
-    showCoordinates,
-    highlightSquares,
-    arrows,
-    moveAnalyses,
-    goForward,
-    goBackward,
-    goToStart,
-    goToEnd,
-    flipBoard,
-    moves,
-    customFen,
-    customMoveSan,
-    customAnalysis,
-    makeCustomMove,
-    resetCustomMove,
-  } = useAnalysisStore();
+  const { currentMoveIndex, isFlipped, showCoordinates, highlightSquares, arrows, moveAnalyses, goForward, goBackward, goToStart, goToEnd, flipBoard, moves, customFen, customMoveSan, customAnalysis, makeCustomMove, resetCustomMove } = useAnalysisStore(
+    useShallow((s) => ({ currentMoveIndex: s.currentMoveIndex, isFlipped: s.isFlipped, showCoordinates: s.showCoordinates, highlightSquares: s.highlightSquares, arrows: s.arrows, moveAnalyses: s.moveAnalyses, goForward: s.goForward, goBackward: s.goBackward, goToStart: s.goToStart, goToEnd: s.goToEnd, flipBoard: s.flipBoard, moves: s.moves, customFen: s.customFen, customMoveSan: s.customMoveSan, customAnalysis: s.customAnalysis, makeCustomMove: s.makeCustomMove, resetCustomMove: s.resetCustomMove }))
+  );
 
   const fen =
     customFen ??

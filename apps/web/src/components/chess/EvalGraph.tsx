@@ -2,10 +2,13 @@
 
 import { useMemo } from "react";
 import { useAnalysisStore } from "@/stores/analysis-store";
+import { useShallow } from "zustand/react/shallow";
 import { MoveClassification } from "@/types/chess";
 
 export default function EvalGraph() {
-  const { moves, moveAnalyses, currentMoveIndex, goToMove } = useAnalysisStore();
+  const { moves, moveAnalyses, currentMoveIndex, goToMove } = useAnalysisStore(
+    useShallow((s) => ({ moves: s.moves, moveAnalyses: s.moveAnalyses, currentMoveIndex: s.currentMoveIndex, goToMove: s.goToMove }))
+  );
 
   const points = useMemo(() => {
     if (moves.length === 0) return [];
