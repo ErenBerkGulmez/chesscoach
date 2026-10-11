@@ -13,7 +13,7 @@
 
 import { StockfishEngine, type EvalResult } from '@/lib/stockfish/engine';
 import { classifyMove, calculateMoveAccuracy, type ClassificationInput } from '@/lib/chess/move-classifier';
-import { bestFromBefore, summarizePlayerMoves } from '@/lib/analysis/summary';
+import { bestFromBefore, summarizePlayerMoves, uciLineToSan } from '@/lib/analysis/summary';
 import { getGamePhase } from '@/lib/chess/pgn-parser';
 import type { MoveAnalysis, ParsedMove, GameAnalysis } from '@/types/chess';
 import { PlayerColor, AnalysisStatus, MoveClassification } from '@/types/chess';
@@ -175,6 +175,7 @@ export function buildMoveAnalyses(moves: ParsedMove[], lines: EvalResult[][]): M
       bestMoveEval: evalBeforeNorm,
       bestMoveMate: mateBeforeNorm,
       pvLines: before.pvLines,
+      replyLine: best ? uciLineToSan(move.fen, best.pv.slice(0, 10)) : [],
       classification: classifyMove(classInput),
       moveAccuracy: calculateMoveAccuracy(evalBeforeNorm, evalAfterNorm, mateBeforeNorm, mateAfterNorm),
       isCapture: move.isCapture,
