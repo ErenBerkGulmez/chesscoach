@@ -23,9 +23,10 @@ export function saveSummary(summary: GameSummary): Promise<boolean> {
   return dbPut(STORES.summaries, summary.gameId, summary);
 }
 
+/** Every card of one player, of both kinds. */
 export function loadCards(username: string): Promise<DeckCard[]> {
   return dbCollect<DeckCard, DeckCard>(STORES.cards, (c) =>
-    c.kind === 'mistake' && sameUser(c.username, username) ? c : undefined
+    (c.kind === 'mistake' || c.kind === 'opening') && sameUser(c.username, username) ? c : undefined
   );
 }
 

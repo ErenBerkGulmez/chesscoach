@@ -1,22 +1,39 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import ConvertTrainer from "@/components/train/ConvertTrainer";
 import DeckTrainer from "@/components/train/DeckTrainer";
+import EndgameTrainer from "@/components/train/EndgameTrainer";
 import GuessTrainer from "@/components/train/GuessTrainer";
+import PuzzleTrainer from "@/components/train/PuzzleTrainer";
+import ThreatTrainer from "@/components/train/ThreatTrainer";
 import VisualizeTrainer from "@/components/train/VisualizeTrainer";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import { deckStats, type DeckCard } from "@/lib/training/deck";
-import { loadCards, loadSummaries } from "@/lib/training/store";
+import { missingCards, openingCards } from "@/lib/training/opening-drill";
+import { loadPracticeDay } from "@/lib/training/progress";
+import { loadCards, loadSummaries, saveCard } from "@/lib/training/store";
 import { openConversions, type GameSummary } from "@/lib/training/summary";
+
+// The charts are only needed on the progress tab.
+const ProgressPanel = dynamic(() => import("@/components/train/ProgressPanel"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-text-muted py-10 text-center">Loading your progress...</p>,
+});
 
 const MODES = [
   { key: "deck", label: "Mistake deck" },
+  { key: "puzzles", label: "Puzzles" },
+  { key: "threats", label: "Threat spotter" },
+  { key: "endgames", label: "Endgames" },
+  { key: "openings", label: "Opening drill" },
   { key: "convert", label: "Win it again" },
   { key: "visualize", label: "Visualization" },
   { key: "guess", label: "Guess the move" },
+  { key: "progress", label: "Progress" },
 ] as const;
 
 type Mode = (typeof MODES)[number]["key"];
@@ -26,6 +43,8 @@ interface Loaded {
   summaries: GameSummary[];
   /** When the data was loaded. Fixes what counts as due for this visit. */
   now: number;
+  /** Seconds already spent on the opening drill today. */
+  openingSeconds: number;
 }
 
 function Trainers() {
@@ -38,9 +57,16 @@ function Trainers() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([loadCards(username), loadSummaries(username)]).then(([cards, summaries]) => {
-      if (!cancelled) setData({ cards, summaries, now: Date.now() });
-    });
+    Promise.all([loadCards(username), loadSummaries(username), loadPracticeDay(username)]).then(
+      async ([cards, summaries, today]) => {
+        // Opening positions that now qualify for the drill join the deck.
+        const added = missingCards(openingCards(summaries), cards);
+        await Promise.all(added.map(saveCard));
+        if (!cancelled) {
+          setData({ cards: [...cards, ...added], summaries, now: Date.now(), openingSeconds: today.openingSeconds ?? 0 });
+        }
+      }
+    );
     return () => {
       cancelled = true;
     };
@@ -51,8 +77,14 @@ function Trainers() {
   const updateSummary = (summary: GameSummary) =>
     setData((d) => (d ? { ...d, summaries: d.summaries.map((s) => (s.gameId === summary.gameId ? summary : s)) } : d));
 
+  const mistakes = data ? data.cards.filter((c) => c.kind === "mistake") : [];
+  const openings = data ? data.cards.filter((c) => c.kind === "opening") : [];
   const badge: Partial<Record<Mode, number>> = data
-    ? { deck: deckStats(data.cards, data.now).due, convert: openConversions(data.summaries).length }
+    ? {
+        deck: deckStats(mistakes, data.now).due,
+        openings: deckStats(openings, data.now).due,
+        convert: openConversions(data.summaries).length,
+      }
     : {};
 
   return (
@@ -103,7 +135,25 @@ function Trainers() {
         {!data ? (
           <p className="text-sm text-text-muted py-10 text-center">Loading your training data...</p>
         ) : mode === "deck" ? (
-          <DeckTrainer cards={data.cards} username={username} now={data.now} onChange={updateCard} />
+          <DeckTrainer key="mistake" cards={mistakes} username={username} now={data.now} onChange={updateCard} />
+        ) : mode === "openings" ? (
+          <DeckTrainer
+            key="opening"
+            cards={openings}
+            username={username}
+            now={data.now}
+            onChange={updateCard}
+            kind="opening"
+            secondsSpent={data.openingSeconds}
+          />
+        ) : mode === "puzzles" ? (
+          <PuzzleTrainer username={username} summaries={data.summaries} seed={data.now} />
+        ) : mode === "threats" ? (
+          <ThreatTrainer cards={mistakes} username={username} seed={data.now} />
+        ) : mode === "endgames" ? (
+          <EndgameTrainer summaries={data.summaries} username={username} />
+        ) : mode === "progress" ? (
+          <ProgressPanel username={username} summaries={data.summaries} cards={data.cards} now={data.now} />
         ) : mode === "convert" ? (
           <ConvertTrainer
             summaries={data.summaries}
@@ -112,7 +162,7 @@ function Trainers() {
             onChange={updateSummary}
           />
         ) : mode === "visualize" ? (
-          <VisualizeTrainer cards={data.cards} seed={data.now} />
+          <VisualizeTrainer cards={mistakes} seed={data.now} />
         ) : (
           <GuessTrainer />
         )}

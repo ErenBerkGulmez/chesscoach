@@ -28,6 +28,16 @@ export default function SiteFooter() {
         >
           lichess-org/chess-openings (CC0)
         </a>
+        {" · "}
+        Puzzles:{" "}
+        <a
+          href="https://database.lichess.org/#puzzles"
+          target="_blank"
+          rel="noreferrer"
+          className="underline hover:text-text-secondary"
+        >
+          Lichess puzzle database (CC0)
+        </a>
       </p>
     </footer>
   );

@@ -2,7 +2,7 @@
 
 Free, in-browser game review for Chess.com players. Enter a username, pick a game, and get a move-by-move review powered by Stockfish 18 running locally in WebAssembly, with plain-language explanations and opening statistics.
 
-Everything runs in your browser: no account, no server, no API keys. Game data comes from the [Chess.com public API](https://www.chess.com/news/view/published-data-api).
+Everything runs in your browser: no account, no server, no API keys. Game data comes from the [Chess.com public API](https://www.chess.com/news/view/published-data-api). The only other outside service is the Lichess tablebase, which the endgame trainer asks about positions with seven pieces or fewer.
 
 ## Features
 
@@ -18,6 +18,12 @@ Everything runs in your browser: no account, no server, no API keys. Game data c
   - **Win it again**: winning positions you did not win, played out against Stockfish.
   - **Visualization**: read a short line without the pieces moving, then answer a question about the final position.
   - **Guess the move**: play the winner's side of classic games, scored against the move that was played.
+  - **Puzzles**: 30,000 puzzles sorted by skill, aimed at your biggest weakness, with a puzzle rating per skill.
+  - **Threat spotter**: tap everything that is in danger before you choose a move.
+  - **Endgames**: textbook positions and endgames from your own games, checked move by move against the tablebase.
+  - **Opening drill**: positions you keep reaching and getting wrong, five minutes a day.
+  - **Progress**: blunders per 100 moves, winning chances lost per move, accuracy by phase and your practice, week by week.
+  - The deck exports to PGN with comments and arrows, ready to import into a Lichess study.
 - Dark and light themes; keyboard navigation (`←` `→` `Home` `End`, `F` to flip).
 
 ## How the review works
@@ -36,6 +42,7 @@ Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · 
 apps/web/
 ├── public/stockfish/        Stockfish 18 WASM build (vendored, GPL-3.0, see NOTICE.txt)
 ├── public/openings/         Opening names by position (built by scripts/build-openings.mjs)
+├── public/puzzles/          Puzzle shards, gzipped (built by scripts/build-puzzles.mjs)
 ├── scripts/                 Data build scripts, not shipped with the app
 └── src/
     ├── app/                 Routes: landing, dashboard, game review
@@ -85,4 +92,6 @@ It includes and builds on:
 
 - **Stockfish 18** via [Stockfish.js](https://github.com/nmrugg/stockfish.js), GPL-3.0. See [`apps/web/public/stockfish/NOTICE.txt`](apps/web/public/stockfish/NOTICE.txt) for the notice and source links.
 - **[ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs)**, MIT, for scheduling the mistake deck.
+- **Puzzles** from the [Lichess puzzle database](https://database.lichess.org/#puzzles), released under CC0.
+- **Endgame verdicts** from the [Lichess tablebase API](https://github.com/lichess-org/lila-tablebase), queried from your browser while you use the endgame trainer.
 - **Opening names** from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings), released into the public domain under CC0.

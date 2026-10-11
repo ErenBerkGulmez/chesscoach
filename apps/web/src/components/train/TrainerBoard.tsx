@@ -19,6 +19,10 @@ interface Props {
   highlight?: string[];
   arrows?: TrainerArrow[];
   showNotation?: boolean;
+  /** Called when a square is tapped, for exercises where squares are picked rather than moves made. */
+  onSquareTap?: (square: Square) => void;
+  /** Background colour per square, drawn over the highlights. */
+  marks?: Record<string, string>;
 }
 
 const LAST_MOVE = "rgba(255, 255, 0, 0.4)";
@@ -28,7 +32,16 @@ const SELECTED = "rgba(20, 110, 190, 0.45)";
  * A board for the trainers. Moves can be dragged or made with two taps, and
  * only legal moves get through. Promotions are made to a queen.
  */
-export default function TrainerBoard({ fen, orientation, onMove, highlight, arrows, showNotation = true }: Props) {
+export default function TrainerBoard({
+  fen,
+  orientation,
+  onMove,
+  highlight,
+  arrows,
+  showNotation = true,
+  onSquareTap,
+  marks,
+}: Props) {
   // The square picked with the first tap, remembered together with the position it belongs to.
   const [picked, setPicked] = useState<{ fen: string; square: Square } | null>(null);
   const selected = picked && picked.fen === fen ? picked.square : null;
@@ -63,8 +76,9 @@ export default function TrainerBoard({ fen, orientation, onMove, highlight, arro
         // not a playable position: no hints
       }
     }
+    for (const [sq, colour] of Object.entries(marks ?? {})) styles[sq] = { ...styles[sq], backgroundColor: colour };
     return styles;
-  }, [highlight, selected, fen]);
+  }, [highlight, selected, fen, marks]);
 
   const boardArrows = useMemo(
     () => (arrows ?? []).map((a) => ({ startSquare: a.from, endSquare: a.to, color: a.color ?? "rgba(0, 128, 0, 0.6)" })),
@@ -87,6 +101,7 @@ export default function TrainerBoard({ fen, orientation, onMove, highlight, arro
           allowDragging: !!onMove,
           onPieceDrop: ({ sourceSquare, targetSquare }) => (targetSquare ? tryMove(sourceSquare, targetSquare) : false),
           onSquareClick: ({ square }) => {
+            if (onSquareTap) return onSquareTap(square as Square);
             if (!onMove) return;
             if (selected && selected !== square && tryMove(selected, square)) return;
             let own = false;
