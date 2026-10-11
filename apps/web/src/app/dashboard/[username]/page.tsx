@@ -236,6 +236,13 @@ export default function DashboardPage() {
                 )}
               </button>
             ))}
+            <Link
+              href={`/dashboard/${username}/train`}
+              className="px-4 py-3 text-sm font-medium text-text-muted hover:text-text-secondary transition-colors"
+            >
+              <span className="mr-1.5">🎯</span>
+              Train
+            </Link>
           </nav>
         </div>
       </div>

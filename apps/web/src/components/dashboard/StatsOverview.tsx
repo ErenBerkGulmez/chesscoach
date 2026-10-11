@@ -7,6 +7,7 @@ import { GameResult, TimeClass, PlayerColor } from "@/types/chess";
 import type { ParsedGame } from "@/types/chess";
 import { motion } from "framer-motion";
 import OpeningAnalytics from "./OpeningAnalytics";
+import WeaknessProfile from "./WeaknessProfile";
 
 /**
  * Statistics Overview Dashboard
@@ -16,8 +17,8 @@ import OpeningAnalytics from "./OpeningAnalytics";
  * - Four-Category Independent Opening Analytics Dashboard
  */
 export default function StatsOverview() {
-  const { games } = usePlayerStore(
-    useShallow((s) => ({ games: s.games }))
+  const { games, username } = usePlayerStore(
+    useShallow((s) => ({ games: s.games, username: s.username }))
   );
 
   const stats = useMemo(() => computeStats(games), [games]);
@@ -35,6 +36,8 @@ export default function StatsOverview() {
 
   return (
     <div className="space-y-8">
+      {username && <WeaknessProfile games={games} username={username} />}
+
       {/* Top-level stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard
