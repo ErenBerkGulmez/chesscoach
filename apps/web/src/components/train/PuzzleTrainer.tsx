@@ -49,13 +49,16 @@ export default function PuzzleTrainer({
   username,
   summaries,
   seed,
+  initialChoice,
 }: {
   username: string;
   summaries: GameSummary[];
   seed: number;
+  /** What to practise when the trainer opens. Defaults to the player's biggest weakness. */
+  initialChoice?: SkillKey | "mixed";
 }) {
   const recommended = useMemo(() => focusSkill(buildProfile(summaries)), [summaries]);
-  const [choice, setChoice] = useState<Choice>(recommended ?? "mixed");
+  const [choice, setChoice] = useState<Choice>(initialChoice ?? recommended ?? "mixed");
   const [stats, setStats] = useState<Record<SkillKey, PuzzleStat> | null>(null);
   const [active, setActive] = useState<Active | null>(null);
   const [error, setError] = useState<string | null>(null);
