@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "setup:maia": "node scripts/setup-maia.mjs"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.7",
@@ -20,6 +21,7 @@
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.25.0",
     "next": "16.2.10",
+    "onnxruntime-web": "^1.30.0",
     "react": "19.2.4",
     "react-chessboard": "^5.10.0",
     "react-dom": "19.2.4",

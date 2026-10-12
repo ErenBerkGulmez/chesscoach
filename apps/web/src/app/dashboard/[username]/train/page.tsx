@@ -8,12 +8,16 @@ import ConvertTrainer from "@/components/train/ConvertTrainer";
 import DeckTrainer from "@/components/train/DeckTrainer";
 import EndgameTrainer from "@/components/train/EndgameTrainer";
 import GuessTrainer from "@/components/train/GuessTrainer";
+import PlanPanel from "@/components/train/PlanPanel";
+import SparTrainer from "@/components/train/SparTrainer";
 import PuzzleTrainer from "@/components/train/PuzzleTrainer";
 import ThreatTrainer from "@/components/train/ThreatTrainer";
 import VisualizeTrainer from "@/components/train/VisualizeTrainer";
 import ThemeToggle from "@/components/layout/ThemeToggle";
 import { deckStats, type DeckCard } from "@/lib/training/deck";
+import type { SkillKey } from "@/lib/coach/report";
 import { missingCards, openingCards } from "@/lib/training/opening-drill";
+import type { StepTarget } from "@/lib/training/plan";
 import { loadPracticeDay } from "@/lib/training/progress";
 import { loadCards, loadSummaries, saveCard } from "@/lib/training/store";
 import { openConversions, type GameSummary } from "@/lib/training/summary";
@@ -25,12 +29,14 @@ const ProgressPanel = dynamic(() => import("@/components/train/ProgressPanel"), 
 });
 
 const MODES = [
+  { key: "plan", label: "Plan" },
   { key: "deck", label: "Mistake deck" },
   { key: "puzzles", label: "Puzzles" },
   { key: "threats", label: "Threat spotter" },
   { key: "endgames", label: "Endgames" },
   { key: "openings", label: "Opening drill" },
   { key: "convert", label: "Win it again" },
+  { key: "spar", label: "Sparring" },
   { key: "visualize", label: "Visualization" },
   { key: "guess", label: "Guess the move" },
   { key: "progress", label: "Progress" },
@@ -52,7 +58,9 @@ function Trainers() {
   const search = useSearchParams();
   const username = params.username as string;
   const requested = search.get("mode");
-  const [mode, setMode] = useState<Mode>(MODES.some((m) => m.key === requested) ? (requested as Mode) : "deck");
+  const [mode, setMode] = useState<Mode>(MODES.some((m) => m.key === requested) ? (requested as Mode) : "plan");
+  // The skill the plan asked the puzzle trainer to open on, if it did.
+  const [puzzleChoice, setPuzzleChoice] = useState<SkillKey | "mixed" | undefined>(undefined);
   const [data, setData] = useState<Loaded | null>(null);
 
   useEffect(() => {
@@ -79,6 +87,13 @@ function Trainers() {
 
   const mistakes = data ? data.cards.filter((c) => c.kind === "mistake") : [];
   const openings = data ? data.cards.filter((c) => c.kind === "opening") : [];
+  // A step of the plan's session opens the trainer it names.
+  const go = (target: StepTarget) => {
+    if (target.mode === "game") return;
+    if (target.mode === "puzzles") setPuzzleChoice(target.skill);
+    setMode(target.mode);
+  };
+
   const badge: Partial<Record<Mode, number>> = data
     ? {
         deck: deckStats(mistakes, data.now).due,
@@ -134,6 +149,20 @@ function Trainers() {
       <main className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-4">
         {!data ? (
           <p className="text-sm text-text-muted py-10 text-center">Loading your training data...</p>
+        ) : mode === "plan" ? (
+          <PlanPanel
+            username={username}
+            summaries={data.summaries}
+            now={data.now}
+            onGo={go}
+            context={{
+              dueMistakes: badge.deck ?? 0,
+              dueOpenings: badge.openings ?? 0,
+              openConversions: badge.convert ?? 0,
+            }}
+          />
+        ) : mode === "spar" ? (
+          <SparTrainer summaries={data.summaries} seed={data.now} />
         ) : mode === "deck" ? (
           <DeckTrainer key="mistake" cards={mistakes} username={username} now={data.now} onChange={updateCard} />
         ) : mode === "openings" ? (
@@ -147,7 +176,13 @@ function Trainers() {
             secondsSpent={data.openingSeconds}
           />
         ) : mode === "puzzles" ? (
-          <PuzzleTrainer username={username} summaries={data.summaries} seed={data.now} />
+          <PuzzleTrainer
+            key={puzzleChoice ?? "default"}
+            username={username}
+            summaries={data.summaries}
+            seed={data.now}
+            initialChoice={puzzleChoice}
+          />
         ) : mode === "threats" ? (
           <ThreatTrainer cards={mistakes} username={username} seed={data.now} />
         ) : mode === "endgames" ? (
