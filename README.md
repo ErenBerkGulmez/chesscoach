@@ -13,6 +13,7 @@ Everything runs in your browser: no account, no server, no API keys. Game data c
 - **Statistics**: results by colour and time control, and opening analytics split into the openings you choose and the ones you face.
 - **Opening tree**: every line you have reached as White or Black, with games, score and the evaluation after move 10. Openings are named by position, so transpositions get the right name.
 - **Weakness profile**: analyzes your last 50 games in the background (pause and resume any time) and ranks six skills by the winning chances each one costs you per game, with examples that open the move.
+- **Four-week plan**: built from your two costliest skills and your rating. Each session is due reviews, a drill for the skill in focus, then mixed puzzles or a game with its review. A weekly check-in moves the focus on once the skill costs a quarter less. The goal is four sessions a week, with no daily streak.
 - **Training** (the Train page):
   - **Mistake deck**: the costly mistakes from your own games as "find a better move" cards, scheduled with spaced repetition.
   - **Win it again**: winning positions you did not win, played out against Stockfish.
@@ -23,6 +24,7 @@ Everything runs in your browser: no account, no server, no API keys. Game data c
   - **Endgames**: textbook positions and endgames from your own games, checked move by move against the tablebase.
   - **Opening drill**: positions you keep reaching and getting wrong, five minutes a day.
   - **Progress**: blunders per 100 moves, winning chances lost per move, accuracy by phase and your practice, week by week.
+  - **Sparring**: play winning positions and endgames against a bot that moves like a person of the rating you choose (Maia-2), running on your device.
   - The deck exports to PGN with comments and arrows, ready to import into a Lichess study.
 - Dark and light themes; keyboard navigation (`←` `→` `Home` `End`, `F` to flip).
 
@@ -70,6 +72,14 @@ npm run dev
 
 Open http://localhost:3000 and enter a Chess.com username.
 
+The sparring bot needs a model that is too large for the repository (93 MB). To use it, run this once in `apps/web`; everything else works without it:
+
+```bash
+npm run setup:maia
+```
+
+It downloads the Maia-2 model into `public/maia/` and copies the ONNX runtime into `public/ort/`. To serve the model from somewhere else, set `NEXT_PUBLIC_MAIA_MODEL_URL`.
+
 ## Scripts
 
 Run from `apps/web` (or from the repository root, which forwards to it):
@@ -81,6 +91,7 @@ Run from `apps/web` (or from the repository root, which forwards to it):
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm test` | Unit tests (Vitest) |
+| `npm run setup:maia` | Install the sparring bot's model and runtime |
 
 CI runs lint, typecheck, tests and build on every pull request.
 
@@ -92,6 +103,8 @@ It includes and builds on:
 
 - **Stockfish 18** via [Stockfish.js](https://github.com/nmrugg/stockfish.js), GPL-3.0. See [`apps/web/public/stockfish/NOTICE.txt`](apps/web/public/stockfish/NOTICE.txt) for the notice and source links.
 - **[ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs)**, MIT, for scheduling the mistake deck.
+- **[Maia-2](https://github.com/CSSLab/maia2)** by the CSSLab at the University of Toronto, MIT, for the sparring bot. The model is downloaded by `npm run setup:maia` and is not part of this repository.
+- **[onnxruntime-web](https://github.com/microsoft/onnxruntime)**, MIT, to run it in the browser.
 - **Puzzles** from the [Lichess puzzle database](https://database.lichess.org/#puzzles), released under CC0.
 - **Endgame verdicts** from the [Lichess tablebase API](https://github.com/lichess-org/lila-tablebase), queried from your browser while you use the endgame trainer.
 - **Opening names** from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings), released into the public domain under CC0.

@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vendored Stockfish build, not our code.
     "public/stockfish/**",
+    // ONNX runtime copied in by scripts/setup-maia.mjs, not our code.
+    "public/ort/**",
   ]),
 ]);
 

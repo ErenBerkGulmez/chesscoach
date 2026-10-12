@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sparring bot: the model and runtime are installed by `npm run setup:maia`
+/public/maia/*.onnx
+/public/ort/
